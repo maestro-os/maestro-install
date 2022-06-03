@@ -1,24 +1,25 @@
 #!/bin/bash
 
+# This scripts installs the maestro system on a mounted partition
+# The path to the partition is specified by the environment variable SYSROOT
+
+echo "Installing system on "$SYSROOT"..."
+
 # Creates the directories hierarchy
-mkdir -pv {boot,home,mnt,opt,srv}
-mkdir -pv etc/{opt,sysconfig}
-mkdir -pv lib/firmware
-mkdir -pv media/{floppy,cdrom}
-mkdir -pv usr/{,local/}{bin,include,lib,sbin,src}
-mkdir -pv usr/{,local/}share/{color,dict,doc,info,locale,man}
-mkdir -pv usr/{,local/}share/{misc,terminfo,zoneinfo}
-mkdir -pv usr/{,local/}share/man/man{1..8}
-mkdir -pv var/{cache,local,log,mail,opt,spool}
-mkdir -pv var/lib/{color,misc,locate}
-ln -sfv ../run var/run
-ln -sfv ../run/lock var/lock
+mkdir -pv $SYSROOT/{bin,boot,home,mnt,opt,sbin,srv}
+mkdir -pv $SYSROOT/etc/{opt,sysconfig}
+mkdir -pv $SYSROOT/lib/firmware
+mkdir -pv $SYSROOT/media/{floppy,cdrom}
+mkdir -pv $SYSROOT/usr/{,local/}{bin,include,lib,sbin,src}
+mkdir -pv $SYSROOT/usr/{,local/}share/{color,dict,doc,info,locale,man}
+mkdir -pv $SYSROOT/usr/{,local/}share/{misc,terminfo,zoneinfo}
+mkdir -pv $SYSROOT/usr/{,local/}share/man/man{1..8}
+mkdir -pv $SYSROOT/var/{cache,local,log,mail,opt,spool}
+mkdir -pv $SYSROOT/var/lib/{color,misc,locate}
+ln -sfv ../run $SYSROOT/var/run
+ln -sfv ../run/lock $SYSROOT/var/lock
 
 # Installing mandatory packages
-# TODO Call on blimp to install a list of packages
-
-# Installing Solfège
-# TODO
-
-# Installing blimp
-# TODO
+for p in $(cat base_packages.txt); do
+	blimp install $p
+done
