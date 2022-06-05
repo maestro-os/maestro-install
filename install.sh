@@ -3,6 +3,8 @@
 # This scripts installs the maestro system on a mounted partition
 # The path to the partition is specified by the environment variable SYSROOT
 
+set -e
+
 echo "Installing system on "$SYSROOT"..."
 
 # Creates the directories hierarchy
@@ -20,10 +22,10 @@ ln -sfv ../run $SYSROOT/var/run
 ln -sfv ../run/lock $SYSROOT/var/lock
 
 # Installing blimp's files
-mkdir -pv $SYSROOT/usr/lib/blimp/database
-blimp remote-add luc.lenot.re:8080
+mkdir -pv $SYSROOT/usr/lib/blimp/{cache,database}
+blimp remote-add localhost:8080
+#blimp remote-add luc.lenot.re:8080
+blimp update
 
 # Installing mandatory packages
-for p in $(cat base_packages.txt); do
-	blimp install $p
-done
+blimp install $(cat base_packages.txt)
