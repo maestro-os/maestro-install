@@ -1,2 +1,3 @@
 bash
+coreutils
 solfege
