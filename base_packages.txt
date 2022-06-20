@@ -1,3 +1,4 @@
 bash
 coreutils
+maestro-utils
 solfege
