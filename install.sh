@@ -8,7 +8,7 @@ set -e
 echo "Installing system on "$SYSROOT"..."
 
 # Creates the directories hierarchy
-mkdir -pv $SYSROOT/{bin,boot,home,mnt,opt,proc,run,sbin,srv,sys,tmp}
+mkdir -pv $SYSROOT/{bin,boot,dev,home,mnt,opt,proc,run,sbin,srv,sys,tmp}
 mkdir -pv $SYSROOT/etc/{opt,sysconfig}
 mkdir -pv $SYSROOT/lib/firmware
 mkdir -pv $SYSROOT/media/{floppy,cdrom}
