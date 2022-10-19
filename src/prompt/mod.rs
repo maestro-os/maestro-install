@@ -3,6 +3,7 @@
 pub mod term;
 
 use crate::InstallInfo;
+use crate::InstallProgress;
 
 /// Enumeration of installation steps.
 #[derive(Clone, Copy)]
@@ -68,4 +69,7 @@ pub trait InstallPrompt {
 
 	/// Returns the list of prompted informations.
 	fn get_infos(&self) -> &InstallInfo;
+
+	/// Updates the current progress of the installation.
+	fn update_progress(progress: &InstallProgress);
 }

@@ -1,6 +1,7 @@
 //! This module implements installation prompt from terminal.
 
 use crate::InstallInfo;
+use crate::InstallProgress;
 use std::io::BufRead;
 use std::io::Write;
 use std::io;
@@ -122,5 +123,10 @@ impl InstallPrompt for TermPrompt {
 
 	fn get_infos(&self) -> &InstallInfo {
 		&self.infos
+	}
+
+	fn update_progress(progress: &InstallProgress) {
+		// TODO
+		todo!();
 	}
 }
