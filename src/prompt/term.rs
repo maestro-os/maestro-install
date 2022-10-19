@@ -82,8 +82,6 @@ impl InstallPrompt for TermPrompt {
 				io::stdout().flush();
 				let hostname = lines_iter.next();
 				self.infos.hostname = hostname;
-
-				// TODO
 			},
 
 			InstallStep::CreateAdmin => {
@@ -117,7 +115,17 @@ impl InstallPrompt for TermPrompt {
 
 			InstallStep::Partitions => {
 				// TODO Detect partitions/systems that are already present
-				// TODO
+
+				// TODO List disks
+				// TODO Ask the disk to be selected for the system
+
+				// TODO Ask whether:
+				// - The old system(s) should be wiped and partitions creation is automatic
+				// - The old system(s) should NOT be wiped and partitions creation is automatic
+				// - Partitions should be created manualy
+
+				// TODO If manual, list disks/partitions that are present and asks for
+				// modifications
 			},
 
 			InstallStep::Install => {
@@ -144,7 +152,7 @@ impl InstallPrompt for TermPrompt {
 
 				let _ = lines_iter.next();
 
-				// TODO Reboot
+				util::reboot();
 			},
 		}
 		println!();

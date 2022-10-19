@@ -2,6 +2,7 @@
 
 mod install;
 mod prompt;
+mod util;
 
 use prompt::InstallPrompt;
 use prompt::InstallStep;
