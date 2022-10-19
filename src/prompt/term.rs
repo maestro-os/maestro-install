@@ -1,7 +1,7 @@
 //! This module implements installation prompt from terminal.
 
-use crate::InstallInfo;
-use crate::InstallProgress;
+use crate::install::InstallInfo;
+use crate::install::InstallProgress;
 use std::io::BufRead;
 use std::io::Write;
 use std::io;
@@ -66,7 +66,12 @@ impl InstallPrompt for TermPrompt {
 			},
 
 			InstallStep::Localization => {
-				// TODO Language
+				print!("Type `?` to get the list of available languages.");
+				print!("Type the system's language: ");
+				io::stdout().flush();
+				let lang = lines_iter.next();
+				self.infos.lang = lang;
+
 				// TODO Contient/Country
 				// TODO Timezone
 			},
@@ -75,7 +80,8 @@ impl InstallPrompt for TermPrompt {
 				// TODO Add a characters limit?
 				print!("Type system hostname: ");
 				io::stdout().flush();
-				let _hostname = lines_iter.next();
+				let hostname = lines_iter.next();
+				self.infos.hostname = hostname;
 
 				// TODO
 			},
@@ -84,21 +90,29 @@ impl InstallPrompt for TermPrompt {
 				// TODO Add a characters limit?
 				print!("Type admin username: ");
 				io::stdout().flush();
-				let _username = lines_iter.next();
+				let username = lines_iter.next();
+				self.infos.admin_user = username;
 
-				print!("Type admin/root password: ");
-				io::stdout().flush();
-				// TODO Disable prompting
-				let _pass = lines_iter.next();
-				// TODO Re-enable prompting
+				loop {
+					print!("Type admin/root password: ");
+					io::stdout().flush();
+					// TODO Disable prompting
+					let pass = lines_iter.next();
+					// TODO Re-enable prompting
 
-				print!("Confirm admin/root password: ");
-				io::stdout().flush();
-				// TODO Disable prompting
-				let _pass_confirm = lines_iter.next();
-				// TODO Re-enable prompting
+					print!("Confirm admin/root password: ");
+					io::stdout().flush();
+					// TODO Disable prompting
+					let pass_confirm = lines_iter.next();
+					// TODO Re-enable prompting
 
-				// TODO Check both passwords correspond
+					if pass == pass_confirm {
+						self.infos.admin_pass = pass;
+						break;
+					}
+
+					eprintln!("Passwords don't match!");
+				}
 			},
 
 			InstallStep::Partitions => {
@@ -107,13 +121,30 @@ impl InstallPrompt for TermPrompt {
 			},
 
 			InstallStep::Install => {
-				// TODO Ask for confirmation
+				loop {
+					print!("Confirm installation? (y/n) ");
+					io::stdout().flush();
+					let confirm = lines_iter.next();
+					match confirm {
+						"y" => break,
 
-				// TODO Perform install
+						"n" => {
+							// TODO Abort
+							todo!();
+						}
+
+						_ => {},
+					}
+				}
 			},
 
 			InstallStep::Finished => {
-				// TODO
+				println!("Installation is now finished!");
+				println!("To start maestro, unplug your installation medium, then press ENTER");
+
+				let _ = lines_iter.next();
+
+				// TODO Reboot
 			},
 		}
 		println!();
