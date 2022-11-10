@@ -1,6 +1,7 @@
 //! TODO doc
 
 mod install;
+mod lang;
 mod prompt;
 mod util;
 

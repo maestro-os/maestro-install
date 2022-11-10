@@ -1,5 +1,7 @@
 //! TODO doc
 
+use crate::lang::Language;
+
 /// Structure storing informations about a partition.
 pub struct Partition {
 	/// The path of the device.
@@ -18,7 +20,7 @@ pub struct Partition {
 #[derive(Default)]
 pub struct InstallInfo {
 	/// The system's language.
-	pub lang: String,
+	pub lang: Option<Language>,
 	/// The system's country.
 	pub country: String,
 	/// The system's timezone.

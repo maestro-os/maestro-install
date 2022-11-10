@@ -2,7 +2,8 @@
 
 use crate::install::InstallInfo;
 use crate::install::InstallProgress;
-use std::io::BufRead;
+use crate::lang::Language;
+use crate::util;
 use std::io::Write;
 use std::io;
 use super::InstallPrompt;
@@ -44,9 +45,6 @@ impl InstallPrompt for TermPrompt {
 			println!();
 		}
 
-		let stdin = io::stdin();
-		let mut lines_iter = stdin.lock().lines();
-
 		match curr_step {
 			InstallStep::Welcome => {
 				println!("##     ##    ###    ########  ######  ######## ########   #######  
@@ -62,15 +60,31 @@ impl InstallPrompt for TermPrompt {
 				println!();
 				println!("To begin the installation, press ENTER.");
 
-				let _ = lines_iter.next();
+				util::read_line();
 			},
 
 			InstallStep::Localization => {
-				print!("Type `?` to get the list of available languages.");
-				print!("Type the system's language: ");
-				io::stdout().flush();
-				let lang = lines_iter.next();
-				self.infos.lang = lang;
+				let available_langs = Language::list();
+
+				while self.infos.lang.is_none() {
+					print!("Type `?` to get the list of available languages.");
+					print!("Type the system's language: ");
+					let _ = io::stdout().flush();
+					let lang = util::read_line();
+
+					if lang == "?" {
+						println!("Available languages:");
+						for (_, l) in &available_langs {
+							println!("- {}", l);
+						}
+
+						println!();
+					} else if let Some(lang) = available_langs.get(&lang) {
+						self.infos.lang = Some(lang.clone());
+					} else {
+						eprintln!("\nInvalid language `{}`!\n", lang);
+					}
+				}
 
 				// TODO Contient/Country
 				// TODO Timezone
@@ -79,29 +93,29 @@ impl InstallPrompt for TermPrompt {
 			InstallStep::SystemInfo => {
 				// TODO Add a characters limit?
 				print!("Type system hostname: ");
-				io::stdout().flush();
-				let hostname = lines_iter.next();
+				let _ = io::stdout().flush();
+				let hostname = util::read_line();
 				self.infos.hostname = hostname;
 			},
 
 			InstallStep::CreateAdmin => {
 				// TODO Add a characters limit?
 				print!("Type admin username: ");
-				io::stdout().flush();
-				let username = lines_iter.next();
+				let _ = io::stdout().flush();
+				let username = util::read_line();
 				self.infos.admin_user = username;
 
 				loop {
 					print!("Type admin/root password: ");
-					io::stdout().flush();
+					let _ = io::stdout().flush();
 					// TODO Disable prompting
-					let pass = lines_iter.next();
+					let pass = util::read_line();
 					// TODO Re-enable prompting
 
 					print!("Confirm admin/root password: ");
-					io::stdout().flush();
+					let _ = io::stdout().flush();
 					// TODO Disable prompting
-					let pass_confirm = lines_iter.next();
+					let pass_confirm = util::read_line();
 					// TODO Re-enable prompting
 
 					if pass == pass_confirm {
@@ -131,9 +145,9 @@ impl InstallPrompt for TermPrompt {
 			InstallStep::Install => {
 				loop {
 					print!("Confirm installation? (y/n) ");
-					io::stdout().flush();
-					let confirm = lines_iter.next();
-					match confirm {
+					let _ = io::stdout().flush();
+					let confirm = util::read_line();
+					match confirm.as_str() {
 						"y" => break,
 
 						"n" => {
@@ -150,8 +164,7 @@ impl InstallPrompt for TermPrompt {
 				println!("Installation is now finished!");
 				println!("To start maestro, unplug your installation medium, then press ENTER");
 
-				let _ = lines_iter.next();
-
+				util::read_line();
 				util::reboot();
 			},
 		}
