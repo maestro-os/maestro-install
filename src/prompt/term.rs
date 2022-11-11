@@ -64,25 +64,33 @@ impl InstallPrompt for TermPrompt {
 			},
 
 			InstallStep::Localization => {
-				let available_langs = Language::list();
+				let available_langs = Language::list().unwrap(); // TODO Handle error
 
 				while self.infos.lang.is_none() {
-					print!("Type `?` to get the list of available languages.");
+					println!("Type `?` to get the list of available languages.");
 					print!("Type the system's language: ");
 					let _ = io::stdout().flush();
 					let lang = util::read_line();
 
-					if lang == "?" {
-						println!("Available languages:");
-						for (_, l) in &available_langs {
-							println!("- {}", l);
-						}
+					match lang.as_str() {
+						"?" => {
+							println!("Available languages:");
+							for (_, l) in available_langs.iter() {
+								println!("- {}", l);
+							}
 
-						println!();
-					} else if let Some(lang) = available_langs.get(&lang) {
-						self.infos.lang = Some(lang.clone());
-					} else {
-						eprintln!("\nInvalid language `{}`!\n", lang);
+							println!();
+						},
+
+						"" => {},
+
+						_ => {
+							if let Some(lang) = available_langs.get(&lang) {
+								self.infos.lang = Some(lang.clone());
+							} else {
+								eprintln!("\nInvalid language `{}`!\n", lang);
+							}
+						},
 					}
 				}
 

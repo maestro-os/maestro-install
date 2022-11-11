@@ -1,10 +1,19 @@
 //! TODO doc
 
+use serde::Deserialize;
 use std::collections::HashMap;
 use std::fmt;
+use std::fs::File;
+use std::fs;
+use std::io::BufReader;
+use std::io;
+use std::path::Path;
+
+/// The path to the languages directory.
+const LANGS_PATH: &str = "lang/"; // TODO Use an absolute path
 
 /// Structure representing a language.
-#[derive(Clone)]
+#[derive(Clone, Deserialize)]
 pub struct Language {
 	/// The name of the language used to select it.
 	name: String,
@@ -17,9 +26,24 @@ impl Language {
 	///
 	/// The function returns a hashmap where the key is the name of the language and the value is
 	/// the language itself.
-	pub fn list() -> HashMap<String, Self> {
-		// TODO
-		todo!();
+	pub fn list() -> io::Result<HashMap<String, Self>> {
+		let mut langs = HashMap::new();
+
+		for e in fs::read_dir(LANGS_PATH)? {
+			let e = e?;
+			if !e.file_type()?.is_file() {
+				continue;
+			}
+
+			let path = Path::new(LANGS_PATH).join(e.file_name());
+			let file = File::open(path)?;
+			let reader = BufReader::new(file);
+
+			let lang: Self = serde_json::from_reader(reader)?;
+			langs.insert(lang.name.clone(), lang);
+		}
+
+		Ok(langs)
 	}
 }
 
