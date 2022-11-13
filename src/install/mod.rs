@@ -1,23 +1,9 @@
 //! TODO doc
 
 use crate::lang::Language;
+use crate::partition::Partition;
 use serde::Deserialize;
 use serde::Serialize;
-
-/// Structure storing informations about a partition.
-#[derive(Deserialize, Serialize)]
-pub struct Partition {
-	/// The path of the device.
-	pub dev: String,
-
-	/// The start offset.
-	pub start: u64,
-	/// The end offset.
-	pub end: u64,
-
-	/// The partition type.
-	pub part_type: u8,
-}
 
 /// Structure storing installation informations.
 #[derive(Default, Deserialize, Serialize)]

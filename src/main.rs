@@ -2,6 +2,7 @@
 
 mod install;
 mod lang;
+mod partition;
 mod prompt;
 mod util;
 
