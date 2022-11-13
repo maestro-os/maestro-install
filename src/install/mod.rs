@@ -1,8 +1,11 @@
 //! TODO doc
 
 use crate::lang::Language;
+use serde::Deserialize;
+use serde::Serialize;
 
 /// Structure storing informations about a partition.
+#[derive(Deserialize, Serialize)]
 pub struct Partition {
 	/// The path of the device.
 	pub dev: String,
@@ -17,7 +20,7 @@ pub struct Partition {
 }
 
 /// Structure storing installation informations.
-#[derive(Default)]
+#[derive(Default, Deserialize, Serialize)]
 pub struct InstallInfo {
 	/// The system's language.
 	pub lang: Option<Language>,
@@ -41,12 +44,20 @@ pub struct InstallInfo {
 impl InstallInfo {
 	/// Performs the installation operation.
 	pub fn perform_install(&self) {
-		// TODO
+		// TODO Partition disks
+		// TODO Create filesystems
+		// TODO Mount filesystems
+		// TODO Install packages
+		// TODO Set locales
+		// TODO Set hostname
+		// TODO Create users and groups
+		// TODO Unmount filesystems
+
 		todo!();
 	}
 }
 
-/// Structure representing the curren progress of the installation.
+/// Structure representing the current progress of the installation.
 pub struct InstallProgress {
 	/// Logs.
 	logs: Vec<String>,

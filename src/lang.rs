@@ -1,6 +1,7 @@
 //! TODO doc
 
 use serde::Deserialize;
+use serde::Serialize;
 use std::collections::HashMap;
 use std::fmt;
 use std::fs::File;
@@ -13,7 +14,7 @@ use std::path::Path;
 const LANGS_PATH: &str = "lang/"; // TODO Use an absolute path
 
 /// Structure representing a language.
-#[derive(Clone, Deserialize)]
+#[derive(Clone, Deserialize, Serialize)]
 pub struct Language {
 	/// The name of the language used to select it.
 	name: String,

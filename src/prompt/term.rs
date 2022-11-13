@@ -6,6 +6,7 @@ use crate::lang::Language;
 use crate::util;
 use std::io::Write;
 use std::io;
+use std::process::exit;
 use super::InstallPrompt;
 use super::InstallStep;
 
@@ -99,39 +100,49 @@ impl InstallPrompt for TermPrompt {
 			},
 
 			InstallStep::SystemInfo => {
-				// TODO Add a characters limit?
-				print!("Type system hostname: ");
-				let _ = io::stdout().flush();
-				let hostname = util::read_line();
-				self.infos.hostname = hostname;
+				while self.infos.hostname.is_empty() {
+					print!("Type system hostname: ");
+					let _ = io::stdout().flush();
+
+					let hostname = util::read_line();
+					self.infos.hostname = hostname;
+				}
 			},
 
 			InstallStep::CreateAdmin => {
-				// TODO Add a characters limit?
 				print!("Type admin username: ");
 				let _ = io::stdout().flush();
-				let username = util::read_line();
-				self.infos.admin_user = username;
 
-				loop {
+				while self.infos.admin_user.is_empty() {
+					let username = util::read_line();
+					self.infos.admin_user = username;
+				}
+
+				while self.infos.admin_pass.is_empty() {
 					print!("Type admin/root password: ");
 					let _ = io::stdout().flush();
+
 					// TODO Disable prompting
 					let pass = util::read_line();
 					// TODO Re-enable prompting
 
+					if pass.is_empty() {
+						continue;
+					}
+
 					print!("Confirm admin/root password: ");
 					let _ = io::stdout().flush();
+
 					// TODO Disable prompting
 					let pass_confirm = util::read_line();
 					// TODO Re-enable prompting
 
-					if pass == pass_confirm {
-						self.infos.admin_pass = pass;
-						break;
+					if pass != pass_confirm {
+						eprintln!("Passwords don't match!");
+						continue;
 					}
 
-					eprintln!("Passwords don't match!");
+					self.infos.admin_pass = pass;
 				}
 			},
 
@@ -151,6 +162,8 @@ impl InstallPrompt for TermPrompt {
 			},
 
 			InstallStep::Install => {
+				// TODO Add option to export options to file
+
 				loop {
 					print!("Confirm installation? (y/n) ");
 					let _ = io::stdout().flush();
@@ -159,8 +172,8 @@ impl InstallPrompt for TermPrompt {
 						"y" => break,
 
 						"n" => {
-							// TODO Abort
-							todo!();
+							eprintln!("Installation cancelled.");
+							exit(1);
 						}
 
 						_ => {},
