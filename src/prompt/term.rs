@@ -3,6 +3,7 @@
 use crate::install::InstallInfo;
 use crate::install::InstallProgress;
 use crate::lang::Language;
+use crate::partition::Disk;
 use crate::util;
 use std::io::Write;
 use std::io;
@@ -147,7 +148,16 @@ impl InstallPrompt for TermPrompt {
 			},
 
 			InstallStep::Partitions => {
-				// TODO Detect partitions/systems that are already present
+				let disks = Disk::list().unwrap(); // TODO Handle error
+
+				println!("Available disks and partitions:");
+				for d in disks {
+					println!("- {}", d.get_dev_path().display());
+
+					for p in &d.partitions {
+						println!("\t- {}", p);
+					}
+				}
 
 				// TODO List disks
 				// TODO Ask the disk to be selected for the system

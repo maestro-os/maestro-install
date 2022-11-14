@@ -3,8 +3,10 @@
 use serde::Deserialize;
 use serde::Serialize;
 use std::ffi::OsString;
+use std::fmt;
 use std::fs;
 use std::io;
+use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
 use std::process::Stdio;
@@ -48,24 +50,7 @@ impl Partition {
 
 		// Writing partitions
 		for (i, p) in parts.iter().enumerate() {
-			script += &format!(
-				"{}{} : start={}, size={}, type={}",
-				dev,
-				i,
-				p.start,
-				p.size,
-				p.part_type
-			);
-
-			if p.bootable {
-				script += ", bootable"
-			}
-
-			if let Some(ref uuid) = p.uuid {
-				script += &format!(", uuid={}", uuid);
-			}
-
-			script += "\n";
+			script += &format!("{}{} : {}\n", dev, i, p);
 		}
 
 		script
@@ -172,27 +157,62 @@ impl Partition {
 	}
 }
 
+impl fmt::Display for Partition {
+	fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+		write!(fmt, "start={}, size={}, type={}", self.start, self.size, self.part_type)?;
+
+		if self.bootable {
+			write!(fmt, ", bootable")?;
+		}
+
+		if let Some(ref uuid) = self.uuid {
+			write!(fmt, ", uuid={}", uuid)?;
+		}
+
+		Ok(())
+	}
+}
+
 /// Structure representing a disk, containing partitions.
 pub struct Disk {
 	/// The path to the disk's device file.
 	dev_path: PathBuf,
 
 	/// The disk's partitions.
-	partitions: Vec<Partition>,
+	pub partitions: Vec<Partition>,
 }
 
 impl Disk {
+	/// Tells whether the device file at the given path is a valid disk.
+	fn is_valid(path: &Path) -> bool {
+		let Some(path_str) = path.as_os_str().to_str() else {
+			return false;
+		};
+
+		if path_str.starts_with("/dev/sd") && !path_str.contains(|c: char| c.is_numeric()) {
+			return true;
+		}
+		if path_str.starts_with("/dev/nvme0n") && !path_str.contains('p') {
+			return true;
+		}
+
+		// TODO Add USB, floppy, cdrom, etc...
+
+		false
+	}
+
 	/// Lists disks present on the system.
 	pub fn list() -> io::Result<Vec<Self>> {
 		let mut disks = vec![];
 
 		for dev in fs::read_dir("/dev")? {
-			let dev = dev?;
-			if dev.file_type()?.is_dir() {
+			let dev_path = dev?.path();
+
+			// Filter devices
+			if !Self::is_valid(&dev_path) {
 				continue;
 			}
 
-			let dev_path = dev.path();
 			let output = Command::new("sfdisk")
 				.args(&[OsString::from("-d").as_os_str(), dev_path.as_os_str()])
 				.stdout(Stdio::piped())
@@ -215,6 +235,11 @@ impl Disk {
 		}
 
 		Ok(disks)
+	}
+
+	/// Returns the path to the device file of the disk.
+	pub fn get_dev_path(&self) -> &Path {
+		&self.dev_path
 	}
 }
 
