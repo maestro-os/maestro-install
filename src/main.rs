@@ -34,7 +34,7 @@ fn main() {
 
 		if matches!(curr_step, InstallStep::Install) {
 			let infos = prompt.get_infos();
-			infos.perform_install();
+			infos.perform_install().unwrap(); // TODO Handle error
 		}
 	}
 }

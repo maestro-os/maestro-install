@@ -110,10 +110,10 @@ impl InstallPrompt for TermPrompt {
 			},
 
 			InstallStep::CreateAdmin => {
-				print!("Type admin username: ");
-				let _ = io::stdout().flush();
-
 				while self.infos.admin_user.is_empty() {
+					print!("Type admin username: ");
+					let _ = io::stdout().flush();
+
 					let username = util::read_line();
 					self.infos.admin_user = username;
 				}

@@ -11,7 +11,7 @@ use std::io;
 use std::path::Path;
 
 /// Structure storing informations about a partition.
-#[derive(Deserialize, Serialize)]
+#[derive(Default, Deserialize, Serialize)]
 pub struct Partition {
 	/// The start offset in sectors.
 	pub start: u64,
@@ -19,7 +19,10 @@ pub struct Partition {
 	pub size: u64,
 
 	/// The partition type.
-	pub part_type: u8,
+	pub part_type: String,
+
+	/// The partition's UUID.
+	pub uuid: String,
 
 	/// Tells whether the partition is bootable.
 	pub bootable: bool,
@@ -40,6 +43,7 @@ impl Partition {
 
 		let mut parts = vec![];
 		for line in iter {
+			// Skipping header
 			if skipping {
 				if line?.trim().is_empty() {
 					skipping = false;
@@ -49,9 +53,79 @@ impl Partition {
 			}
 
 			let line = line?;
+			let mut split = line.split(':').skip(1);
+			let Some(values) = split.next() else {
+				// TODO error
+				todo!();
+			};
 
-			// TODO parse partition entry
-			todo!();
+			// Filling partition structure
+			let mut part = Self::default();
+			for v in values.split(',') {
+				let mut split = v.split('=');
+				let Some(name) = split.next() else {
+					// TODO error
+					todo!();
+				};
+
+				let name = name.trim();
+				let value = split.next().map(|s| s.trim());
+
+				match name {
+					"start" => {
+						let Some(val) = value else {
+							// TODO error
+							todo!();
+						};
+						let Ok(val) = val.parse() else {
+							// TODO error
+							todo!();
+						};
+
+						part.start = val;
+					},
+
+					"size" => {
+						let Some(val) = value else {
+							// TODO error
+							todo!();
+						};
+						let Ok(val) = val.parse() else {
+							// TODO error
+							todo!();
+						};
+
+						part.size = val;
+					},
+
+					"type" => {
+						let Some(val) = value else {
+							// TODO error
+							todo!();
+						};
+
+						part.part_type = val.to_string();
+					},
+
+					"uuid" => {
+						let Some(val) = value else {
+							// TODO error
+							todo!();
+						};
+
+						part.uuid = val.to_string();
+					},
+
+					"bootable" => part.bootable = true,
+
+					_ => {
+						// TODO error
+						todo!();
+					},
+				}
+			}
+
+			parts.push(part);
 		}
 
 		Ok(parts)
@@ -82,7 +156,7 @@ impl Partition {
 		for (i, p) in parts.iter().enumerate() {
 			let s = if p.bootable {
 				format!(
-					"{}{} : start= {}, size= {}, type={:x}, bootable\n",
+					"{}{} : start= {}, size= {}, type={}, bootable\n",
 					dev,
 					i,
 					p.start,
@@ -91,7 +165,7 @@ impl Partition {
 				)
 			} else {
 				format!(
-					"{}{} : start= {}, size= {}, type={:x}\n",
+					"{}{} : start= {}, size= {}, type={}\n",
 					dev,
 					i,
 					p.start,
@@ -106,3 +180,5 @@ impl Partition {
 		Ok(())
 	}
 }
+
+// TODO unit tests
