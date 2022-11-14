@@ -159,13 +159,13 @@ impl InstallPrompt for TermPrompt {
 					}
 				}
 
-				// TODO List disks
-				// TODO Ask the disk to be selected for the system
-
 				// TODO Ask whether:
 				// - The old system(s) should be wiped and partitions creation is automatic
-				// - The old system(s) should NOT be wiped and partitions creation is automatic
+				// - If free space is left on a disk: The old system(s) should NOT be wiped and
+				// partitions creation is automatic
 				// - Partitions should be created manualy
+
+				// TODO Ask the disk to be selected for the system
 
 				// TODO If manual, list disks/partitions that are present and asks for
 				// modifications
