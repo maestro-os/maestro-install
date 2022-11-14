@@ -2,16 +2,16 @@
 
 use serde::Deserialize;
 use serde::Serialize;
-use std::fs::File;
-use std::fs::OpenOptions;
-use std::io::BufRead;
-use std::io::BufReader;
-use std::io::Write;
+use std::ffi::OsString;
+use std::fs;
 use std::io;
-use std::path::Path;
+use std::path::PathBuf;
+use std::process::Command;
+use std::process::Stdio;
+use std::str;
 
 /// Structure storing informations about a partition.
-#[derive(Default, Deserialize, Serialize)]
+#[derive(Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Partition {
 	/// The start offset in sectors.
 	pub start: u64,
@@ -22,37 +22,77 @@ pub struct Partition {
 	pub part_type: String,
 
 	/// The partition's UUID.
-	pub uuid: String,
+	pub uuid: Option<String>,
 
 	/// Tells whether the partition is bootable.
 	pub bootable: bool,
 }
 
 impl Partition {
-	/// Loads a partitions list from a given sfdisk script.
+	/// Serializes a partitions list into a sfdisk script.
 	///
 	/// Arguments:
-	/// - `path` is the path of the script.
-	pub fn load(path: &Path) -> io::Result<Vec<Self>> {
-        let file = File::open(path)?;
-		let reader = BufReader::new(file);
-		let iter = reader.lines();
+	/// - `dev` is the path to the device file of the disk.
+	/// - `parts` is the list of partitions.
+	///
+	/// The function returns the resulting script.
+	pub fn serialize(dev: &str, parts: &[Self]) -> String {
+		let mut script = String::new();
 
-		// Tells whether the loop is currently skipping the header
-		let mut skipping = true;
+		// Writing header
+		// TODO label
+		// TODO label-id
+		script += format!("device: {}\n", dev).as_str();
+		script += "unit: sectors\n";
+		script += "\n";
 
+		// Writing partitions
+		for (i, p) in parts.iter().enumerate() {
+			script += &format!(
+				"{}{} : start={}, size={}, type={}",
+				dev,
+				i,
+				p.start,
+				p.size,
+				p.part_type
+			);
+
+			if p.bootable {
+				script += ", bootable"
+			}
+
+			if let Some(ref uuid) = p.uuid {
+				script += &format!(", uuid={}", uuid);
+			}
+
+			script += "\n";
+		}
+
+		script
+	}
+
+	/// Deserializes a partitions list from a given sfdisk script.
+	///
+	/// Arguments:
+	/// - `data` is script.
+	///
+	/// The function returns the list of partitions.
+	pub fn deserialize(data: &str) -> Vec<Self> {
+		// Skip header
+		let mut iter = data.split('\n');
+		while let Some(line) = iter.next() {
+			if line.trim().is_empty() {
+				break;
+			}
+		}
+
+		// Parse partitions
 		let mut parts = vec![];
 		for line in iter {
-			// Skipping header
-			if skipping {
-				if line?.trim().is_empty() {
-					skipping = false;
-				}
-
+			if line.trim().is_empty() {
 				continue;
 			}
 
-			let line = line?;
 			let mut split = line.split(':').skip(1);
 			let Some(values) = split.next() else {
 				// TODO error
@@ -113,7 +153,7 @@ impl Partition {
 							todo!();
 						};
 
-						part.uuid = val.to_string();
+						part.uuid = Some(val.to_string());
 					},
 
 					"bootable" => part.bootable = true,
@@ -128,57 +168,90 @@ impl Partition {
 			parts.push(part);
 		}
 
-		Ok(parts)
-	}
-
-	/// Stores a partitions list into a sfdisk script.
-	///
-	/// Arguments:
-	/// - `dev` is the path to the device file of the disk.
-	/// - `parts` is the list of partitions.
-	/// - `path` is the path of the script.
-	pub fn store(dev: &str, parts: &[Self], path: &Path) -> io::Result<()> {
-        let mut file = OpenOptions::new()
-			.read(true)
-			.write(true)
-			.create(true)
-			.truncate(true)
-			.open(path)?;
-
-		// Writing header
-		// TODO label
-		// TODO label-id
-		file.write(format!("device: {}\n", dev).as_bytes())?;
-		file.write(b"unit: sectors\n")?;
-		file.write(b"\n")?;
-
-		// Writing partitions
-		for (i, p) in parts.iter().enumerate() {
-			let s = if p.bootable {
-				format!(
-					"{}{} : start= {}, size= {}, type={}, bootable\n",
-					dev,
-					i,
-					p.start,
-					p.size,
-					p.part_type
-				)
-			} else {
-				format!(
-					"{}{} : start= {}, size= {}, type={}\n",
-					dev,
-					i,
-					p.start,
-					p.size,
-					p.part_type
-				)
-			};
-
-			file.write(s.as_bytes())?;
-		}
-
-		Ok(())
+		parts
 	}
 }
 
-// TODO unit tests
+/// Structure representing a disk, containing partitions.
+pub struct Disk {
+	/// The path to the disk's device file.
+	dev_path: PathBuf,
+
+	/// The disk's partitions.
+	partitions: Vec<Partition>,
+}
+
+impl Disk {
+	/// Lists disks present on the system.
+	pub fn list() -> io::Result<Vec<Self>> {
+		let mut disks = vec![];
+
+		for dev in fs::read_dir("/dev")? {
+			let dev = dev?;
+			if dev.file_type()?.is_dir() {
+				continue;
+			}
+
+			let dev_path = dev.path();
+			let output = Command::new("sfdisk")
+				.args(&[OsString::from("-d").as_os_str(), dev_path.as_os_str()])
+				.stdout(Stdio::piped())
+				.stderr(Stdio::null())
+				.output()?;
+			if !output.status.success() {
+				continue;
+			}
+
+			let Ok(script) = str::from_utf8(&output.stdout) else {
+				continue;
+			};
+			let partitions = Partition::deserialize(script);
+
+			disks.push(Self {
+				dev_path,
+
+				partitions,
+			});
+		}
+
+		Ok(disks)
+	}
+}
+
+#[cfg(test)]
+mod test {
+	use super::*;
+
+	#[test]
+	fn partitions_serialize0() {
+		let parts0 = vec![];
+
+		let script = Partition::serialize("/dev/sda", &parts0);
+		let parts1 = Partition::deserialize(&script);
+
+		assert!(parts1.is_empty());
+	}
+
+	#[test]
+	fn partitions_serialize1() {
+		let parts0 = vec![Partition {
+			start: 0,
+			size: 1,
+
+			part_type: "foo".to_string(),
+
+			uuid: Some("bar".to_string()),
+
+			bootable: false,
+		}];
+
+		let script = Partition::serialize("/dev/sda", &parts0);
+		let parts1 = Partition::deserialize(&script);
+
+		for (p0, p1) in parts0.iter().zip(&parts1) {
+			assert_eq!(p0, p1);
+		}
+	}
+
+	// TODO More tests (especially invalid scripts)
+}
