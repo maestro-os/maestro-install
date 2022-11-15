@@ -10,10 +10,10 @@ fi
 TARGET=i686-unknown-linux-musl
 
 # Kernel compilation
-#git clone https://github.com/llenotre/maestro
-#cp maestro/default.config maestro/.config
-#sed -i "s/^GENERAL_ARCH=*$/GENERAL_ARCH=\"$ARCH\"/" maestro/.config
-#make -C maestro/ maestro
+git clone https://github.com/llenotre/maestro
+cp maestro/default.config maestro/.config
+sed -i "s/^GENERAL_ARCH=*$/GENERAL_ARCH=\"$ARCH\"/" maestro/.config
+make -C maestro/ maestro
 
 
 
@@ -29,12 +29,15 @@ cp -v maestro/maestro iso/boot/
 
 
 
-# Initramfs creation
+# Initramfs preparation
 mkdir -pv mnt/sbin
 cp -v target/$TARGET/release/maestro_install mnt/sbin/init
 # TODO Add sfdisk
 # TODO Fill local packages repository, if building without network access
-find mnt/ | cpio -o >iso/boot/initramfs
+
+cd mnt
+find . | cpio -o >../iso/boot/initramfs
+cd ..
 
 
 
