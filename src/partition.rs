@@ -21,7 +21,7 @@ fn get_disk_size<D: AsRawFd>(dev: &D) -> u64 {
 	let mut size = 0;
 
 	unsafe {
-		libc::ioctl(dev.as_raw_fd(), util::BLKGETSIZE64, &mut size);
+		libc::ioctl(dev.as_raw_fd(), util::BLKGETSIZE64 as _, &mut size);
 	}
 
 	size / 512
