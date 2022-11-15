@@ -4,10 +4,10 @@ use serde::Deserialize;
 use serde::Serialize;
 use std::collections::HashMap;
 use std::fmt;
-use std::fs::File;
 use std::fs;
-use std::io::BufReader;
+use std::fs::File;
 use std::io;
+use std::io::BufReader;
 use std::path::Path;
 
 /// The path to the languages directory.

@@ -1,13 +1,13 @@
 //! TODO doc
 
-use crate::util::log2;
 use crate::util;
+use crate::util::log2;
 use serde::Deserialize;
 use serde::Serialize;
 use std::ffi::OsString;
 use std::fmt;
-use std::fs::File;
 use std::fs;
+use std::fs::File;
 use std::io;
 use std::os::fd::AsRawFd;
 use std::path::Path;
@@ -123,7 +123,7 @@ impl Partition {
 						};
 
 						part.start = val;
-					},
+					}
 
 					"size" => {
 						let Some(val) = value else {
@@ -136,7 +136,7 @@ impl Partition {
 						};
 
 						part.size = val;
-					},
+					}
 
 					"type" => {
 						let Some(val) = value else {
@@ -145,7 +145,7 @@ impl Partition {
 						};
 
 						part.part_type = val.to_string();
-					},
+					}
 
 					"uuid" => {
 						let Some(val) = value else {
@@ -154,14 +154,14 @@ impl Partition {
 						};
 
 						part.uuid = Some(val.to_string());
-					},
+					}
 
 					"bootable" => part.bootable = true,
 
 					_ => {
 						// TODO error
 						todo!();
-					},
+					}
 				}
 			}
 
@@ -174,7 +174,11 @@ impl Partition {
 
 impl fmt::Display for Partition {
 	fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
-		write!(fmt, "start={}, size={}, type={}", self.start, self.size, self.part_type)?;
+		write!(
+			fmt,
+			"start={}, size={}, type={}",
+			self.start, self.size, self.part_type
+		)?;
 
 		if self.bootable {
 			write!(fmt, ", bootable")?;
@@ -301,7 +305,7 @@ impl fmt::Display for ByteSize {
 			_ => {
 				order = 0;
 				"bytes"
-			},
+			}
 		};
 
 		let unit = 1024usize.pow(order as u32);
@@ -357,7 +361,13 @@ mod test {
 		assert_eq!(format!("{}", ByteSize(1025)).as_str(), "1 KiB");
 		assert_eq!(format!("{}", ByteSize(2048)).as_str(), "2 KiB");
 		assert_eq!(format!("{}", ByteSize(1024 * 1024)).as_str(), "1 MiB");
-		assert_eq!(format!("{}", ByteSize(1024 * 1024 * 1024)).as_str(), "1 GiB");
-		assert_eq!(format!("{}", ByteSize(1024 * 1024 * 1024 * 1024)).as_str(), "1 TiB");
+		assert_eq!(
+			format!("{}", ByteSize(1024 * 1024 * 1024)).as_str(),
+			"1 GiB"
+		);
+		assert_eq!(
+			format!("{}", ByteSize(1024 * 1024 * 1024 * 1024)).as_str(),
+			"1 TiB"
+		);
 	}
 }

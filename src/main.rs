@@ -6,27 +6,23 @@ mod partition;
 mod prompt;
 mod util;
 
+use prompt::term::TermPrompt;
 use prompt::InstallPrompt;
 use prompt::InstallStep;
-use prompt::term::TermPrompt;
 use std::env;
 use std::process::exit;
 
 fn main() {
 	// Getting prompt type
-	let prompt_type = env::args()
-		.skip(1)
-		.next()
-		.unwrap_or("term".to_owned());
+	let prompt_type = env::args().skip(1).next().unwrap_or("term".to_owned());
 	// Creating prompt
 	let mut prompt = match prompt_type.as_str() {
 		"term" => TermPrompt::new(),
 		// TODO Add support for GUI
-
 		_ => {
 			eprintln!("Invalid prompt type: {}", prompt_type);
 			exit(1);
-		},
+		}
 	};
 
 	while let Some(curr_step) = prompt.get_current_step() {

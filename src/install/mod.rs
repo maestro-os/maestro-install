@@ -6,8 +6,8 @@ use crate::prompt::InstallPrompt;
 use serde::Deserialize;
 use serde::Serialize;
 use std::error::Error;
-use std::fs::OpenOptions;
 use std::fs;
+use std::fs::OpenOptions;
 use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
@@ -78,18 +78,13 @@ impl InstallInfo {
 			"tmp".into(),
 			"usr".into(),
 			"var".into(),
-
 			"etc/opt".into(),
 			"etc/sysconfig".into(),
-
 			"lib/firmware".into(),
-
 			"media/floppy".into(),
 			"media/cdrom".into(),
-
 			"run/lock".into(),
 			"run/log".into(),
-
 			"usr/bin".into(),
 			"usr/include".into(),
 			"usr/lib".into(),
@@ -97,7 +92,6 @@ impl InstallInfo {
 			"usr/sbin".into(),
 			"usr/share".into(),
 			"usr/src".into(),
-
 			"usr/share/color".into(),
 			"usr/share/dict".into(),
 			"usr/share/doc".into(),
@@ -107,14 +101,12 @@ impl InstallInfo {
 			"usr/share/misc".into(),
 			"usr/share/terminfo".into(),
 			"usr/share/zoneinfo".into(),
-
 			"usr/local/bin".into(),
 			"usr/local/include".into(),
 			"usr/local/lib".into(),
 			"usr/local/sbin".into(),
 			"usr/local/share".into(),
 			"usr/local/src".into(),
-
 			"usr/local/share/color".into(),
 			"usr/local/share/dict".into(),
 			"usr/local/share/doc".into(),
@@ -124,7 +116,6 @@ impl InstallInfo {
 			"usr/local/share/misc".into(),
 			"usr/local/share/terminfo".into(),
 			"usr/local/share/zoneinfo".into(),
-
 			"var/cache".into(),
 			"var/lib".into(),
 			"var/local".into(),
@@ -132,7 +123,6 @@ impl InstallInfo {
 			"var/mail".into(),
 			"var/opt".into(),
 			"var/spool".into(),
-
 			"var/lib/color".into(),
 			"var/lib/misc".into(),
 			"var/lib/locate".into(),
@@ -170,7 +160,7 @@ impl InstallInfo {
 	fn set_hostname(&self, mnt_path: &Path) -> Result<(), Box<dyn Error>> {
 		let path = mnt_path.join("etc").join("hostname");
 
-        let mut file = OpenOptions::new()
+		let mut file = OpenOptions::new()
 			.read(true)
 			.write(true)
 			.create(true)
@@ -261,7 +251,8 @@ pub struct InstallProgress<'p> {
 impl<'p> InstallProgress<'p> {
 	/// Inserts the given logs.
 	pub fn log(&mut self, s: &str) {
-		self.logs.append(&mut s.split('\n').map(|s| s.to_owned()).collect());
+		self.logs
+			.append(&mut s.split('\n').map(|s| s.to_owned()).collect());
 		// FIXME self.prompt.update_progress(self);
 	}
 
@@ -270,12 +261,14 @@ impl<'p> InstallProgress<'p> {
 		self.logs.as_slice()
 	}
 
-	/// Returns the current percentage of advancement of the installation, represented by a value between 0 and 1000.
+	/// Returns the current percentage of advancement of the installation, represented by a value
+	/// between 0 and 1000.
 	pub fn get_progress(&self) -> u16 {
 		self.progress
 	}
 
-	/// Sets the current percentage of advancement of the installation, represented by a value between 0 and 1000.
+	/// Sets the current percentage of advancement of the installation, represented by a value
+	/// between 0 and 1000.
 	pub fn set_progress(&mut self, progress: u16) {
 		self.progress = progress;
 		// FIXME self.prompt.update_progress(self);

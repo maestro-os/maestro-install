@@ -1,5 +1,7 @@
 //! This module implements installation prompt from terminal.
 
+use super::InstallPrompt;
+use super::InstallStep;
 use crate::install::InstallInfo;
 use crate::install::InstallProgress;
 use crate::lang::Language;
@@ -7,11 +9,9 @@ use crate::partition::ByteSize;
 use crate::partition::Disk;
 use crate::partition::Partition;
 use crate::util;
-use std::io::Write;
 use std::io;
+use std::io::Write;
 use std::process::exit;
-use super::InstallPrompt;
-use super::InstallStep;
 
 /// Prompts text from the user on the terminal.
 ///
@@ -26,7 +26,7 @@ use super::InstallStep;
 fn prompt<V: Fn(&str) -> Result<(), Option<String>>>(
 	prompt_text: &str,
 	hidden: bool,
-	validator: V
+	validator: V,
 ) -> String {
 	loop {
 		print!("{}", prompt_text);
@@ -46,7 +46,7 @@ fn prompt<V: Fn(&str) -> Result<(), Option<String>>>(
 			Ok(()) => return input,
 			Err(Some(e)) => eprintln!("{}", e),
 
-			_ => {},
+			_ => {}
 		}
 	}
 }
@@ -98,13 +98,15 @@ impl InstallPrompt for TermPrompt {
 
 		match curr_step {
 			InstallStep::Welcome => {
-				println!("##     ##    ###    ########  ######  ######## ########   #######  
+				println!(
+					"##     ##    ###    ########  ######  ######## ########   #######  
 ###   ###   ## ##   ##       ##    ##    ##    ##     ## ##     ## 
 #### ####  ##   ##  ##       ##          ##    ##     ## ##     ## 
 ## ### ## ##     ## ######    ######     ##    ########  ##     ## 
 ##     ## ######### ##             ##    ##    ##   ##   ##     ## 
 ##     ## ##     ## ##       ##    ##    ##    ##    ##  ##     ## 
-##     ## ##     ## ########  ######     ##    ##     ##  #######  ");
+##     ## ##     ## ########  ######     ##    ##     ##  #######  "
+				);
 
 				println!();
 				println!("Welcome to the maestro installer!");
@@ -112,7 +114,7 @@ impl InstallPrompt for TermPrompt {
 				println!("To begin the installation, press ENTER.");
 
 				util::read_line();
-			},
+			}
 
 			InstallStep::Localization => {
 				let available_langs = Language::list().unwrap(); // TODO Handle error
@@ -129,9 +131,9 @@ impl InstallPrompt for TermPrompt {
 							}
 
 							println!();
-						},
+						}
 
-						"" => {},
+						"" => {}
 
 						_ => {
 							if let Some(lang) = available_langs.get(&lang) {
@@ -139,37 +141,25 @@ impl InstallPrompt for TermPrompt {
 							} else {
 								eprintln!("\nInvalid language `{}`!\n", lang);
 							}
-						},
+						}
 					}
 				}
 
 				// TODO Contient/Country
 				// TODO Timezone
-			},
+			}
 
 			InstallStep::SystemInfo => {
 				self.infos.hostname = prompt("Type system hostname: ", false, non_empty_validator);
-			},
+			}
 
 			InstallStep::CreateAdmin => {
-				self.infos.admin_user = prompt(
-					"Type admin username: ",
-					false,
-					non_empty_validator
-				);
+				self.infos.admin_user = prompt("Type admin username: ", false, non_empty_validator);
 
 				loop {
 					println!();
-					let pass = prompt(
-						"Type admin/root password: ",
-						true,
-						non_empty_validator
-					);
-					let pass_confirm = prompt(
-						"Confirm admin/root password: ",
-						true,
-						|_| Ok(())
-					);
+					let pass = prompt("Type admin/root password: ", true, non_empty_validator);
+					let pass_confirm = prompt("Confirm admin/root password: ", true, |_| Ok(()));
 
 					if pass != pass_confirm {
 						eprintln!("Passwords don't match!");
@@ -179,11 +169,11 @@ impl InstallPrompt for TermPrompt {
 					self.infos.admin_pass = pass;
 					break;
 				}
-			},
+			}
 
 			InstallStep::Partitions => {
 				let disks = Disk::list().unwrap(); // TODO Handle error
-				// TODO Filter out disks that don't have enough space
+								   // TODO Filter out disks that don't have enough space
 				if disks.is_empty() {
 					eprintln!("No disks are available for installation. Exiting...");
 					exit(1);
@@ -206,7 +196,8 @@ impl InstallPrompt for TermPrompt {
 
 					// If only one disk is available, de facto select it
 					if disks.len() == 1 {
-						break disks.iter()
+						break disks
+							.iter()
 							.next()
 							.unwrap()
 							.get_dev_path()
@@ -220,7 +211,8 @@ impl InstallPrompt for TermPrompt {
 						"Select the disk to install the system on: ",
 						false,
 						|input| {
-							let exists = disks.iter()
+							let exists = disks
+								.iter()
 								.filter(|d| d.get_dev_path().to_str() == Some(input))
 								.next()
 								.is_some();
@@ -232,7 +224,7 @@ impl InstallPrompt for TermPrompt {
 							} else {
 								Ok(())
 							}
-						}
+						},
 					);
 
 					if !selected_disk.is_empty() {
@@ -259,7 +251,8 @@ impl InstallPrompt for TermPrompt {
 
 				match option.as_str() {
 					"1" => {
-						let disk = disks.iter()
+						let disk = disks
+							.iter()
 							.filter(|d| {
 								d.get_dev_path().to_str() == Some(&self.infos.selected_disk)
 							})
@@ -290,21 +283,20 @@ impl InstallPrompt for TermPrompt {
 						};
 
 						self.infos.partitions = vec![
-							boot_part,
-							// TODO swap
+							boot_part, // TODO swap
 							root_part,
 						];
-					},
+					}
 
 					"2" => {
 						// TODO Ask for modifications on existing partitions
 						todo!();
-					},
+					}
 
 					"3" => {
 						// TODO Build partitions table
 						todo!();
-					},
+					}
 
 					_ => unreachable!(),
 				}
@@ -314,17 +306,14 @@ impl InstallPrompt for TermPrompt {
 				for p in self.infos.partitions.iter() {
 					println!("- {}", p);
 				}
-			},
+			}
 
 			InstallStep::Install => {
 				// TODO Add option to export selected options to file
 
 				loop {
-					let confirm = prompt(
-						"Confirm installation? (y/n) ",
-						false,
-						non_empty_validator
-					);
+					let confirm =
+						prompt("Confirm installation? (y/n) ", false, non_empty_validator);
 					match confirm.as_str() {
 						"y" => break,
 
@@ -333,10 +322,10 @@ impl InstallPrompt for TermPrompt {
 							exit(1);
 						}
 
-						_ => {},
+						_ => {}
 					}
 				}
-			},
+			}
 
 			InstallStep::Finished => {
 				println!("Installation is now finished!");
@@ -344,7 +333,7 @@ impl InstallPrompt for TermPrompt {
 
 				util::read_line();
 				util::reboot();
-			},
+			}
 		}
 		println!();
 
