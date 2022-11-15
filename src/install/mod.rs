@@ -29,8 +29,10 @@ pub struct InstallInfo {
 	/// The admin's password.
 	pub admin_pass: String,
 
+	/// The path to the disk on which the system is to be installed.
+	pub selected_disk: String,
 	/// The partition scheme to be used.
-	pub partitions_scheme: Vec<Partition>,
+	pub partitions: Vec<Partition>,
 }
 
 impl InstallInfo {

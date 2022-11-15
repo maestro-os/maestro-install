@@ -1,16 +1,31 @@
 //! TODO doc
 
+use crate::util;
 use serde::Deserialize;
 use serde::Serialize;
 use std::ffi::OsString;
 use std::fmt;
+use std::fs::File;
 use std::fs;
 use std::io;
+use std::mem::size_of;
+use std::os::fd::AsRawFd;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
 use std::process::Stdio;
 use std::str;
+
+/// Returns the number of sectors on the given disk device.
+fn get_disk_size<D: AsRawFd>(dev: &D) -> u64 {
+	let mut size = 0;
+
+	unsafe {
+		libc::ioctl(dev.as_raw_fd(), util::BLKGETSIZE64, &mut size);
+	}
+
+	size
+}
 
 /// Structure storing informations about a partition.
 #[derive(Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
@@ -177,6 +192,8 @@ impl fmt::Display for Partition {
 pub struct Disk {
 	/// The path to the disk's device file.
 	dev_path: PathBuf,
+	/// The size of the disk in number of sectors.
+	size: u64,
 
 	/// The disk's partitions.
 	pub partitions: Vec<Partition>,
@@ -213,6 +230,13 @@ impl Disk {
 				continue;
 			}
 
+			// Getting the number of sectors on the disk
+			let Ok(size) = File::open(&dev_path).map(|file| {
+				get_disk_size(&file)
+			}) else {
+				continue;
+			};
+
 			let output = Command::new("sfdisk")
 				.args(&[OsString::from("-d").as_os_str(), dev_path.as_os_str()])
 				.stdout(Stdio::piped())
@@ -229,6 +253,7 @@ impl Disk {
 
 			disks.push(Self {
 				dev_path,
+				size,
 
 				partitions,
 			});
@@ -240,6 +265,51 @@ impl Disk {
 	/// Returns the path to the device file of the disk.
 	pub fn get_dev_path(&self) -> &Path {
 		&self.dev_path
+	}
+
+	/// Returns the size of the disk in number of sectors.
+	pub fn get_size(&self) -> u64 {
+		self.size
+	}
+}
+
+/// Structure representing a number of bytes.
+pub struct Size(u64);
+
+impl Size {
+	/// Creates a size from a given number of sectors.
+	pub fn from_sectors_count(cnt: u64) -> Self {
+		Self(cnt * 512)
+	}
+}
+
+// TODO fix
+impl fmt::Display for Size {
+	fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+		// Logarithm of base 1024
+		let mut order = ((size_of::<u64>() * 8) - self.0.leading_zeros() as usize - 1) / 10;
+
+		let suffix = match order {
+			0 => "bytes",
+			1 => "KiB",
+			2 => "MiB",
+			3 => "GiB",
+			4 => "TiB",
+			5 => "PiB",
+			6 => "EiB",
+			7 => "ZiB",
+			8 => "YiB",
+
+			_ => {
+				order = 0;
+				"bytes"
+			},
+		};
+
+		let unit = 1024usize.pow(order as u32);
+		let nbr = self.0 / unit as u64;
+
+		write!(fmt, "{} {}", nbr, suffix)
 	}
 }
 

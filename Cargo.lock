@@ -1146,6 +1146,7 @@ name = "maestro_install"
 version = "0.1.0"
 dependencies = [
  "blimp",
+ "libc",
  "serde",
  "serde_json",
 ]
