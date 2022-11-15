@@ -1,6 +1,4 @@
 /target
 
-maestro/
-mnt/
-iso/
+iso_build/
 maestro.iso
