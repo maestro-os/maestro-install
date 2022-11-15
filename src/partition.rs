@@ -1,5 +1,6 @@
 //! TODO doc
 
+use crate::util::log2;
 use crate::util;
 use serde::Deserialize;
 use serde::Serialize;
@@ -8,7 +9,6 @@ use std::fmt;
 use std::fs::File;
 use std::fs;
 use std::io;
-use std::mem::size_of;
 use std::os::fd::AsRawFd;
 use std::path::Path;
 use std::path::PathBuf;
@@ -24,11 +24,11 @@ fn get_disk_size<D: AsRawFd>(dev: &D) -> u64 {
 		libc::ioctl(dev.as_raw_fd(), util::BLKGETSIZE64, &mut size);
 	}
 
-	size
+	size / 512
 }
 
 /// Structure storing informations about a partition.
-#[derive(Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Partition {
 	/// The start offset in sectors.
 	pub start: u64,
@@ -274,20 +274,18 @@ impl Disk {
 }
 
 /// Structure representing a number of bytes.
-pub struct Size(u64);
+pub struct ByteSize(u64);
 
-impl Size {
+impl ByteSize {
 	/// Creates a size from a given number of sectors.
 	pub fn from_sectors_count(cnt: u64) -> Self {
 		Self(cnt * 512)
 	}
 }
 
-// TODO fix
-impl fmt::Display for Size {
+impl fmt::Display for ByteSize {
 	fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
-		// Logarithm of base 1024
-		let mut order = ((size_of::<u64>() * 8) - self.0.leading_zeros() as usize - 1) / 10;
+		let mut order = log2(self.0).unwrap_or(0) / log2(1024).unwrap();
 
 		let suffix = match order {
 			0 => "bytes",
@@ -349,4 +347,17 @@ mod test {
 	}
 
 	// TODO More tests (especially invalid scripts)
+
+	#[test]
+	fn bytesize() {
+		assert_eq!(format!("{}", ByteSize(0)).as_str(), "0 bytes");
+		assert_eq!(format!("{}", ByteSize(1)).as_str(), "1 bytes");
+		assert_eq!(format!("{}", ByteSize(1023)).as_str(), "1023 bytes");
+		assert_eq!(format!("{}", ByteSize(1024)).as_str(), "1 KiB");
+		assert_eq!(format!("{}", ByteSize(1025)).as_str(), "1 KiB");
+		assert_eq!(format!("{}", ByteSize(2048)).as_str(), "2 KiB");
+		assert_eq!(format!("{}", ByteSize(1024 * 1024)).as_str(), "1 MiB");
+		assert_eq!(format!("{}", ByteSize(1024 * 1024 * 1024)).as_str(), "1 GiB");
+		assert_eq!(format!("{}", ByteSize(1024 * 1024 * 1024 * 1024)).as_str(), "1 TiB");
+	}
 }

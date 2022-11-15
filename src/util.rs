@@ -2,6 +2,7 @@
 
 use std::io::BufRead;
 use std::io;
+use std::mem::size_of;
 use std::process::Command;
 use std::process::exit;
 
@@ -22,6 +23,20 @@ macro_rules! ior {
 
 /// ioctl command: Get size of disk in number of sectors.
 pub const BLKGETSIZE64: u64 = ior!(0x12, 114, usize);
+
+/// Performs the log2 operatin on the given integer.
+///
+/// If the result is undefined, the function returns None.
+pub fn log2(n: u64) -> Option<u64> {
+	let num_bits = (size_of::<u64>() * 8) as u64;
+
+	let n = num_bits - n.leading_zeros() as u64;
+	if n > 0 {
+		Some(n - 1)
+	} else {
+		None
+	}
+}
 
 /// Reads a line from the standard input and returns it.
 ///

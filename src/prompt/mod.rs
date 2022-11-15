@@ -67,9 +67,9 @@ pub trait InstallPrompt {
 	/// Prompts the next step.
 	fn next_step(&mut self);
 
-	/// Returns the list of prompted informations.
-	fn get_infos(&self) -> &InstallInfo;
+	/// Returns prompted informations.
+	fn get_infos(&self) -> InstallInfo;
 
 	/// Updates the current progress of the installation.
-	fn update_progress(progress: &InstallProgress);
+	fn update_progress(&mut self, progress: &InstallProgress);
 }

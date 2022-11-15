@@ -3,9 +3,9 @@
 use crate::install::InstallInfo;
 use crate::install::InstallProgress;
 use crate::lang::Language;
+use crate::partition::ByteSize;
 use crate::partition::Disk;
 use crate::partition::Partition;
-use crate::partition::Size;
 use crate::util;
 use std::io::Write;
 use std::io;
@@ -196,7 +196,7 @@ impl InstallPrompt for TermPrompt {
 							"- {} (sectors: {}, size: {})",
 							d.get_dev_path().display(),
 							d.get_size(),
-							Size::from_sectors_count(d.get_size()),
+							ByteSize::from_sectors_count(d.get_size()),
 						);
 
 						for p in &d.partitions {
@@ -351,11 +351,11 @@ impl InstallPrompt for TermPrompt {
 		self.curr_step = curr_step.get_next();
 	}
 
-	fn get_infos(&self) -> &InstallInfo {
-		&self.infos
+	fn get_infos(&self) -> InstallInfo {
+		self.infos.clone()
 	}
 
-	fn update_progress(progress: &InstallProgress) {
+	fn update_progress(&mut self, progress: &InstallProgress) {
 		// TODO
 		todo!();
 	}

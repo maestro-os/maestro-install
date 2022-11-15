@@ -2,6 +2,7 @@
 
 use crate::lang::Language;
 use crate::partition::Partition;
+use crate::prompt::InstallPrompt;
 use serde::Deserialize;
 use serde::Serialize;
 use std::error::Error;
@@ -12,7 +13,7 @@ use std::path::Path;
 use std::path::PathBuf;
 
 /// Structure storing installation informations.
-#[derive(Default, Deserialize, Serialize)]
+#[derive(Clone, Default, Deserialize, Serialize)]
 pub struct InstallInfo {
 	/// The system's language.
 	pub lang: Option<Language>,
@@ -199,29 +200,84 @@ impl InstallInfo {
 	}
 
 	/// Performs the installation operation.
-	pub fn perform_install(&self) -> Result<(), Box<dyn Error>> {
-		let mnt_path = PathBuf::from("mnt/"); // TODO
-		// TODO Create directory at `mnt_path`
+	///
+	/// `prompt` is the prompt associated with the installation procedure.
+	pub fn perform_install(&self, prompt: &mut dyn InstallPrompt) -> Result<(), Box<dyn Error>> {
+		let mut progress = InstallProgress {
+			prompt,
 
+			logs: vec![],
+			progress: 0,
+		};
+
+		let mnt_path = PathBuf::from("mnt/");
+		progress.log(&format!("Create directory `{}`\n", mnt_path.display()));
+		fs::create_dir(&mnt_path)?;
+
+		progress.log(&format!("\nPartition disk\n"));
 		self.partition_disks()?;
+
+		progress.log(&format!("\nCreate filesystems\n"));
 		self.create_filesystems()?;
+
+		progress.log(&format!("\nMount filesystems\n"));
 		self.mount_filesystems()?;
+
+		progress.log(&format!("\nCreate directory structure\n"));
 		self.create_dirs(&mnt_path)?;
+
+		progress.log(&format!("\nInstall packages\n"));
 		self.install_packages()?;
+
+		progress.log(&format!("\nSet locales\n"));
 		self.set_locales()?;
+
+		progress.log(&format!("\nSet hostname\n"));
 		self.set_hostname(&mnt_path)?;
+
+		progress.log(&format!("\nCreate users and groups\n"));
 		self.create_users()?;
+
+		progress.log(&format!("\nUnmount filesystems\n"));
 		self.unmount_filesystems()?;
+
+		progress.log(&format!("\nDone!\n"));
 
 		Ok(())
 	}
 }
 
 /// Structure representing the current progress of the installation.
-pub struct InstallProgress {
+pub struct InstallProgress<'p> {
+	/// The installation prompt.
+	prompt: &'p mut dyn InstallPrompt,
+
 	/// Logs.
 	logs: Vec<String>,
-
 	/// Progress in percent, between 0 and 1000.
 	progress: u16,
+}
+
+impl<'p> InstallProgress<'p> {
+	/// Inserts the given logs.
+	pub fn log(&mut self, s: &str) {
+		self.logs.append(&mut s.split('\n').map(|s| s.to_owned()).collect());
+		// FIXME self.prompt.update_progress(self);
+	}
+
+	/// Returns an immutable reference to the installation logs.
+	pub fn get_logs(&self) -> &[String] {
+		self.logs.as_slice()
+	}
+
+	/// Returns the current percentage of advancement of the installation, represented by a value between 0 and 1000.
+	pub fn get_progress(&self) -> u16 {
+		self.progress
+	}
+
+	/// Sets the current percentage of advancement of the installation, represented by a value between 0 and 1000.
+	pub fn set_progress(&mut self, progress: u16) {
+		self.progress = progress;
+		// FIXME self.prompt.update_progress(self);
+	}
 }
