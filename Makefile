@@ -18,7 +18,7 @@ iso_build/iso/boot/maestro:
 
 iso_build/iso/boot/initramfs: iso_build/mnt/sbin/init iso_build/mnt/sbin/install
 	mkdir -p iso_build/iso/boot/
-	cd iso_build/mnt/; find . | cpio -o >$@; cd ../..
+	cd iso_build/mnt/; find . | cpio -o >../../$@; cd ../..
 
 iso_build/mnt/sbin/init: iso_build/mnt/lib/modules/maestro-1.0/default/cmos.kmod iso_build/mnt/lib/modules/maestro-1.0/default/ps2.kmod
 	git clone https://github.com/llenotre/solfege iso_build/solfege/
