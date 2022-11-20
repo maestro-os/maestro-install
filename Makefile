@@ -21,15 +21,10 @@ iso_build/iso/boot/initramfs: iso_build/mnt/sbin/init iso_build/mnt/sbin/install
 	cd iso_build/mnt/; find . | cpio -o >../../$@; cd ../..
 
 iso_build/mnt/sbin/init: iso_build/mnt/lib/modules/maestro-1.0/default/cmos.kmod iso_build/mnt/lib/modules/maestro-1.0/default/ps2.kmod
-	git clone https://github.com/llenotre/solfege iso_build/solfege/
-	cargo build --release --target $(TARGET) -Zbuild-std --manifest-path iso_build/solfege/Cargo.toml
-	mkdir -p iso_build/mnt/{etc/solfege,proc,sbin,tmp}
-	echo 'tmpfs			/tmp	tmpfs	rw		0		0' >iso_build/mnt/etc/fstab
-	echo 'procfs			/proc	procfs	rw		0		1' >>iso_build/mnt/etc/fstab
-	ln -sv /proc/self/mounts iso_build/mnt/etc/mtab
+	SYSROOT='iso_build/sbin/' blimp update
+	SYSROOT='iso_build/sbin/' blimp install solfege
 	echo 'install' >iso_build/mnt/etc/hostname
 	echo '/sbin/install' >iso_build/mnt/etc/solfege/startup
-	cp iso_build/solfege/target/$(TARGET)/release/solfege $@
 
 iso_build/mnt/lib/modules/maestro-1.0/default/cmos.kmod:
 	git clone https://github.com/llenotre/maestro_cmos iso_build/maestro_cmos/
