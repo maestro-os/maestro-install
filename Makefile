@@ -21,9 +21,12 @@ iso_build/iso/boot/initramfs: iso_build/mnt/sbin/init iso_build/mnt/sbin/install
 	cd iso_build/mnt/; find . | cpio -o >../../$@; cd ../..
 
 iso_build/mnt/sbin/init: iso_build/mnt/lib/modules/maestro-1.0/default/cmos.kmod iso_build/mnt/lib/modules/maestro-1.0/default/ps2.kmod
-	SYSROOT='iso_build/mnt/' blimp install solfege
+	yes | SYSROOT='iso_build/mnt/' blimp install solfege
 	echo 'install' >iso_build/mnt/etc/hostname
 	echo '/sbin/install' >iso_build/mnt/etc/solfege/startup
+	echo 'tmpfs			/tmp	tmpfs	rw		0		0' >iso_build/mnt/etc/fstab
+	echo 'procfs			/proc	procfs	rw		0		2' >>iso_build/mnt/etc/fstab
+	mkdir iso_build/mnt/{proc,tmp}
 
 iso_build/mnt/lib/modules/maestro-1.0/default/cmos.kmod:
 	git clone https://github.com/llenotre/maestro_cmos iso_build/maestro_cmos/
