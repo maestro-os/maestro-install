@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 common = { git = "https://github.com/llenotre/blimp" }
+fdisk = { git = "https://github.com/llenotre/maestro-utils" }
 libc = "*"
 serde = { version = "1.0.147", features = ["derive"] }
 serde_json = "1.0.87"

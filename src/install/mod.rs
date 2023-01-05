@@ -1,7 +1,6 @@
 //! TODO doc
 
 use crate::lang::Language;
-use crate::partition::Partition;
 use crate::prompt::InstallPrompt;
 use serde::Deserialize;
 use serde::Serialize;

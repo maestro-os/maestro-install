@@ -3,9 +3,6 @@
 use crate::install::InstallInfo;
 use crate::install::InstallProgress;
 use crate::lang::Language;
-use crate::partition::ByteSize;
-use crate::partition::Disk;
-use crate::partition::Partition;
 use crate::util;
 use std::process::exit;
 use super::InstallPrompt;

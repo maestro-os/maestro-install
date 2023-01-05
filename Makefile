@@ -10,14 +10,16 @@ iso_build/iso/boot/grub/grub.cfg:
 
 iso_build/iso/boot/maestro:
 	mkdir -p iso_build/iso/boot/
-	git clone https://github.com/llenotre/maestro iso_build/maestro/
+	#git clone https://github.com/llenotre/maestro iso_build/maestro/
+	cp -r ../maestro iso_build/maestro/
 	cp iso_build/maestro/default.config iso_build/maestro/.config
 	sed -i 's/^GENERAL_ARCH=*$$/GENERAL_ARCH="$(ARCH)"/' iso_build/maestro/.config
+	make -C iso_build/maestro/ fclean
 	make -C iso_build/maestro/ maestro
 	cp -v iso_build/maestro/maestro $@
 
 iso_build/iso/boot/initramfs: iso_build/mnt/sbin/init iso_build/mnt/sbin/install
-	mkdir -p iso_build/iso/boot/
+	mkdir -p iso_build/iso/{boot,dev,proc,tmp}
 	cd iso_build/mnt/; find . | cpio -o >../../$@; cd ../..
 
 iso_build/mnt/sbin/init: iso_build/mnt/lib/modules/maestro-1.0/default/cmos.kmod iso_build/mnt/lib/modules/maestro-1.0/default/ps2.kmod
@@ -44,6 +46,8 @@ iso_build/mnt/sbin/install:
 	cargo build --release --target $(TARGET) -Zbuild-std
 	mkdir -p iso_build/mnt/sbin/
 	cp -v target/$(TARGET)/release/maestro_install $@
+	mkdir -v iso_build/mnt/lang/
+	cp -v lang/* iso_build/mnt/lang/
 
 clean:
 	rm -rf iso_build/
