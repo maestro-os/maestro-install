@@ -1,7 +1,5 @@
 //! This module implements installation prompt from terminal.
 
-use super::InstallPrompt;
-use super::InstallStep;
 use crate::install::InstallInfo;
 use crate::install::InstallProgress;
 use crate::lang::Language;
@@ -9,9 +7,21 @@ use crate::partition::ByteSize;
 use crate::partition::Disk;
 use crate::partition::Partition;
 use crate::util;
-use std::io;
+use libc::ECHO;
+use libc::ECHOE;
+use libc::ICANON;
+use libc::STDIN_FILENO;
+use libc::TCSANOW;
+use libc::VMIN;
+use libc::tcgetattr;
+use libc::tcsetattr;
+use libc::termios;
 use std::io::Write;
+use std::io;
+use std::mem::MaybeUninit;
 use std::process::exit;
+use super::InstallPrompt;
+use super::InstallStep;
 
 /// Prompts text from the user on the terminal.
 ///
@@ -32,14 +42,34 @@ fn prompt<V: Fn(&str) -> Result<(), Option<String>>>(
 		print!("{}", prompt_text);
 		let _ = io::stdout().flush();
 
+		// Saving termios state
+		let saved_termios = unsafe {
+			let mut t: termios = MaybeUninit::uninit().assume_init();
+			tcgetattr(STDIN_FILENO, &mut t);
+
+			t
+		};
+
 		if hidden {
-			// TODO
+			// Setting temporary termios
+			let mut termios = saved_termios.clone();
+			termios.c_lflag &= !(ICANON | ECHO | ECHOE);
+			termios.c_cc[VMIN] = 1;
+
+			unsafe {
+				tcsetattr(STDIN_FILENO, TCSANOW, &termios);
+			}
 		}
 
 		let input = util::read_line();
 
 		if hidden {
-			// TODO
+			println!();
+
+			// Restoring termios state
+			unsafe {
+				tcsetattr(STDIN_FILENO, TCSANOW, &saved_termios);
+			}
 		}
 
 		match validator(&input) {
@@ -173,7 +203,7 @@ impl InstallPrompt for TermPrompt {
 
 			InstallStep::Partitions => {
 				let disks = Disk::list().unwrap(); // TODO Handle error
-								   // TODO Filter out disks that don't have enough space
+				// TODO Filter out disks that don't have enough space
 				if disks.is_empty() {
 					eprintln!("No disks are available for installation. Exiting...");
 					exit(1);
