@@ -7,18 +7,6 @@ use crate::partition::ByteSize;
 use crate::partition::Disk;
 use crate::partition::Partition;
 use crate::util;
-use libc::ECHO;
-use libc::ECHOE;
-use libc::ICANON;
-use libc::STDIN_FILENO;
-use libc::TCSANOW;
-use libc::VMIN;
-use libc::tcgetattr;
-use libc::tcsetattr;
-use libc::termios;
-use std::io::Write;
-use std::io;
-use std::mem::MaybeUninit;
 use std::process::exit;
 use super::InstallPrompt;
 use super::InstallStep;
@@ -33,44 +21,16 @@ use super::InstallStep;
 /// again.
 /// If no error message is provided, no message is printed and the function prompts for input again
 /// directly.
-fn prompt<V: Fn(&str) -> Result<(), Option<String>>>(
+fn prompt<V: Fn(&str) -> Result<(), Option<String>>> (
 	prompt_text: &str,
 	hidden: bool,
 	validator: V,
 ) -> String {
 	loop {
-		print!("{}", prompt_text);
-		let _ = io::stdout().flush();
-
-		// Saving termios state
-		let saved_termios = unsafe {
-			let mut t: termios = MaybeUninit::uninit().assume_init();
-			tcgetattr(STDIN_FILENO, &mut t);
-
-			t
+		let Some(input) = utils::prompt::prompt(Some(prompt_text), hidden) else {
+			// TODO
+			todo!();
 		};
-
-		if hidden {
-			// Setting temporary termios
-			let mut termios = saved_termios.clone();
-			termios.c_lflag &= !(ICANON | ECHO | ECHOE);
-			termios.c_cc[VMIN] = 1;
-
-			unsafe {
-				tcsetattr(STDIN_FILENO, TCSANOW, &termios);
-			}
-		}
-
-		let input = util::read_line();
-
-		if hidden {
-			println!();
-
-			// Restoring termios state
-			unsafe {
-				tcsetattr(STDIN_FILENO, TCSANOW, &saved_termios);
-			}
-		}
 
 		match validator(&input) {
 			Ok(()) => return input,
