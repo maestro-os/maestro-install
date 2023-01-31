@@ -2,11 +2,14 @@
 
 use crate::install::InstallInfo;
 use crate::install::InstallProgress;
+use crate::install::PartitionDesc;
 use crate::lang::Language;
 use crate::util;
+use fdisk::disk::Disk;
 use std::process::exit;
 use super::InstallPrompt;
 use super::InstallStep;
+use utils::util::ByteSize;
 
 /// Prompts text from the user on the terminal.
 ///
@@ -168,15 +171,20 @@ impl InstallPrompt for TermPrompt {
 
 				self.infos.selected_disk = loop {
 					println!("Available disks and partitions:");
-					for d in disks.iter() {
+					for dev_path in disks.iter() {
+						// TODO handle error
+						let disk = Disk::read(dev_path.to_path_buf())
+							.unwrap()
+							.unwrap();
+
 						println!(
 							"- {} (sectors: {}, size: {})",
-							d.get_dev_path().display(),
-							d.get_size(),
-							ByteSize::from_sectors_count(d.get_size()),
+							dev_path.display(),
+							disk.get_size(),
+							ByteSize::from_sectors_count(disk.get_size()),
 						);
 
-						for p in &d.partitions {
+						for p in &disk.partition_table.partitions {
 							println!("\t- {}", p);
 						}
 					}
@@ -187,7 +195,6 @@ impl InstallPrompt for TermPrompt {
 							.iter()
 							.next()
 							.unwrap()
-							.get_dev_path()
 							.to_str()
 							.unwrap()
 							.to_owned();
@@ -200,7 +207,7 @@ impl InstallPrompt for TermPrompt {
 						|input| {
 							let exists = disks
 								.iter()
-								.filter(|d| d.get_dev_path().to_str() == Some(input))
+								.filter(|dev_path| dev_path.to_str() == Some(input))
 								.next()
 								.is_some();
 
@@ -238,39 +245,40 @@ impl InstallPrompt for TermPrompt {
 
 				match option.as_str() {
 					"1" => {
-						let disk = disks
-							.iter()
-							.filter(|d| {
-								d.get_dev_path().to_str() == Some(&self.infos.selected_disk)
+						let disk_path = disks
+							.into_iter()
+							.filter(|dev_path| {
+								dev_path.to_str() == Some(&self.infos.selected_disk)
 							})
 							.next()
 							.unwrap();
+						// TODO handle error
+						let disk = Disk::read(disk_path)
+							.unwrap()
+							.unwrap();
 
-						let boot_part = Partition {
+						let boot_part = PartitionDesc {
 							start: 2048,
 							size: 262144,
 
-							part_type: "C12A7328-F81F-11D2-BA4B-00A0C93EC93B".to_owned(),
+							bootable: true,
 
-							uuid: None,
-
-							bootable: false,
+							mount_path: "/boot".to_owned(),
 						};
+						// TODO swap
 						let root_start = boot_part.start + boot_part.size;
-						let root_part = Partition {
+						let root_part = PartitionDesc {
 							start: root_start,
 							size: disk.get_size() - root_start,
 
-							// TODO (dependent on the filesystem type)
-							part_type: "00000000-0000-0000-0000-000000000000".to_owned(),
-
-							uuid: None,
-
 							bootable: false,
+
+							mount_path: "/".to_owned(),
 						};
 
 						self.infos.partitions = vec![
-							boot_part, // TODO swap
+							boot_part,
+							// TODO swap
 							root_part,
 						];
 					}

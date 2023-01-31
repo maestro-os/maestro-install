@@ -5,11 +5,46 @@ use crate::prompt::InstallPrompt;
 use serde::Deserialize;
 use serde::Serialize;
 use std::error::Error;
-use std::fs;
+use std::fmt;
 use std::fs::OpenOptions;
+use std::fs;
 use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
+use std::process::Command;
+
+/// Structure representing a partition to be created.
+#[derive(Clone, Deserialize, Serialize)]
+pub struct PartitionDesc {
+	/// The start offset of the partition in sectors.
+	pub start: u64,
+	/// The size of the partition in sectors.
+	pub size: u64,
+
+	/// Tells whether the partition is bootable.
+	pub bootable: bool,
+
+	/// The path at which the partition is to be mounted for installation.
+	pub mount_path: String,
+}
+
+impl fmt::Display for PartitionDesc {
+	fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+		if self.bootable {
+			write!(
+				fmt,
+				"{} - start: {}; size: {} sectors, bootable",
+				self.mount_path, self.start, self.size
+			)
+		} else {
+			write!(
+				fmt,
+				"{} - start: {}; size: {} sectors",
+				self.mount_path, self.start, self.size
+			)
+		}
+	}
+}
 
 /// Structure storing installation informations.
 #[derive(Clone, Default, Deserialize, Serialize)]
@@ -32,7 +67,7 @@ pub struct InstallInfo {
 	/// The path to the disk on which the system is to be installed.
 	pub selected_disk: String,
 	/// The partition scheme to be used.
-	pub partitions: Vec<Partition>,
+	pub partitions: Vec<PartitionDesc>,
 }
 
 impl InstallInfo {
@@ -143,6 +178,29 @@ impl InstallInfo {
 
 	/// Installs packages on the system.
 	fn install_packages(&self) -> Result<(), Box<dyn Error>> {
+		println!("Install packages...");
+		println!();
+
+		let _packages = vec![
+			"bash",
+			"blimp",
+			"coreutils",
+			"diffutils",
+			"file",
+			"findutils",
+			"gawk",
+			"grub",
+			"gzip",
+			"m4",
+			"maestro-utils",
+			"musl",
+			"ncurses",
+			"sed",
+			"solfege",
+			"tar",
+			"xz",
+		];
+
 		// TODO
 		todo!();
 	}
@@ -150,7 +208,7 @@ impl InstallInfo {
 	/// Sets localization options.
 	fn set_locales(&self) -> Result<(), Box<dyn Error>> {
 		// TODO
-		Ok(())
+		todo!();
 	}
 
 	/// Creates the hostname file.
@@ -184,8 +242,16 @@ impl InstallInfo {
 
 	/// Unmounts filesystems to finalize the installation.
 	fn unmount_filesystems(&self) -> Result<(), Box<dyn Error>> {
-		// TODO
-		todo!();
+		let status = Command::new("umount")
+			.args(&["-R", "mnt/"])
+			.status()?;
+
+		if status.success() {
+			Ok(())
+		} else {
+			// TODO
+			todo!();
+		}
 	}
 
 	/// Performs the installation operation.
