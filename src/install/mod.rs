@@ -2,6 +2,10 @@
 
 use crate::lang::Language;
 use crate::prompt::InstallPrompt;
+use fdisk::disk::Disk;
+use fdisk::partition::Partition;
+use fdisk::partition::PartitionTable;
+use fdisk::partition::PartitionTableType;
 use serde::Deserialize;
 use serde::Serialize;
 use std::error::Error;
@@ -20,6 +24,9 @@ pub struct PartitionDesc {
 	pub start: u64,
 	/// The size of the partition in sectors.
 	pub size: u64,
+
+	/// The partition type.
+	pub part_type: String,
 
 	/// Tells whether the partition is bootable.
 	pub bootable: bool,
@@ -65,7 +72,7 @@ pub struct InstallInfo {
 	pub admin_pass: String,
 
 	/// The path to the disk on which the system is to be installed.
-	pub selected_disk: String,
+	pub selected_disk: PathBuf,
 	/// The partition scheme to be used.
 	pub partitions: Vec<PartitionDesc>,
 }
@@ -73,8 +80,34 @@ pub struct InstallInfo {
 impl InstallInfo {
 	/// Creates partitions on the disk.
 	fn partition_disks(&self) -> Result<(), Box<dyn Error>> {
-		// TODO
-		todo!();
+		println!("Creating partition table on `{}`...", self.selected_disk.display());
+
+		let partitions = self.partitions.iter()
+			.map(|desc| {
+				Partition {
+					start: desc.start,
+					size: desc.size,
+
+					part_type: desc.part_type.clone(),
+
+					uuid: None, // TODO random
+
+					bootable: desc.bootable,
+				}
+			})
+			.collect();
+
+		let partition_table = PartitionTable {
+			table_type: PartitionTableType::GPT,
+			partitions,
+		};
+
+		let mut disk = Disk::read(self.selected_disk.clone())?.unwrap();
+		disk.partition_table = partition_table;
+
+		disk.write()?;
+
+		Ok(())
 	}
 
 	/// Creates a filesystem on each partition.

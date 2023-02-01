@@ -197,7 +197,7 @@ impl InstallPrompt for TermPrompt {
 							.unwrap()
 							.to_str()
 							.unwrap()
-							.to_owned();
+							.into();
 					}
 
 					println!();
@@ -222,12 +222,12 @@ impl InstallPrompt for TermPrompt {
 					);
 
 					if !selected_disk.is_empty() {
-						break selected_disk;
+						break selected_disk.into();
 					}
 				};
 
 				println!();
-				println!("Installing system on disk `{}`", self.infos.selected_disk);
+				println!("Installing system on disk `{}`", self.infos.selected_disk.display());
 				println!("Partitioning options:");
 				println!("1 - Wipe disk and install system automaticaly (warning: this operation will destroy all data on the disk)");
 				// TODO:
@@ -247,9 +247,7 @@ impl InstallPrompt for TermPrompt {
 					"1" => {
 						let disk_path = disks
 							.into_iter()
-							.filter(|dev_path| {
-								dev_path.to_str() == Some(&self.infos.selected_disk)
-							})
+							.filter(|dev_path| dev_path == &self.infos.selected_disk)
 							.next()
 							.unwrap();
 						// TODO handle error
@@ -261,6 +259,9 @@ impl InstallPrompt for TermPrompt {
 							start: 2048,
 							size: 262144,
 
+							// EFI System
+							part_type: "C12A7328-F81F-11D2-BA4B-00A0C93EC93B".to_owned(),
+
 							bootable: true,
 
 							mount_path: "/boot".to_owned(),
@@ -270,6 +271,9 @@ impl InstallPrompt for TermPrompt {
 						let root_part = PartitionDesc {
 							start: root_start,
 							size: disk.get_size() - root_start,
+
+							// Linux root (x86)
+							part_type: "44479540-F297-41B2-9AF7-D131D5F0458A".to_owned(),
 
 							bootable: false,
 
