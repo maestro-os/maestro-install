@@ -1,53 +1,44 @@
 ARCH ?= x86
 TARGET ?= i686-unknown-linux-musl
 
+INITRAMFS_ROOT = iso_build/mnt
+MODULES_PATH = $(INITRAMFS_ROOT)/lib/modules/maestro-1.0/default
+
+GRUB_ROOT = iso_build/iso
+
 maestro.iso: iso_build/iso/boot/grub/grub.cfg iso_build/iso/boot/maestro iso_build/iso/boot/initramfs
 	grub-mkrescue -o $@ iso_build/iso
 
-iso_build/iso/boot/grub/grub.cfg:
+$(GRUB_ROOT)/boot/grub/grub.cfg:
 	mkdir -p iso_build/iso/boot/grub/
 	cp grub.cfg $@
 
-iso_build/iso/boot/maestro:
+$(GRUB_ROOT)/boot/maestro:
 	mkdir -p iso_build/iso/boot/
-	#git clone https://github.com/llenotre/maestro iso_build/maestro/
-	cp -r ../maestro iso_build/maestro/
-	cp iso_build/maestro/default.config iso_build/maestro/.config
-	sed -i 's/^GENERAL_ARCH=*$$/GENERAL_ARCH="$(ARCH)"/' iso_build/maestro/.config
-	make -C iso_build/maestro/ fclean
-	make -C iso_build/maestro/ maestro
-	cp -v iso_build/maestro/maestro $@
+	yes | SYSROOT='$(INITRAMFS_ROOT)' blimp install maestro
 
-iso_build/iso/boot/initramfs: iso_build/mnt/sbin/init iso_build/mnt/sbin/install
+$(GRUB_ROOT)/boot/initramfs: $(INITRAMFS_ROOT)/sbin/init $(INITRAMFS_ROOT)/sbin/install
 	mkdir -p iso_build/iso/{boot,dev,proc,tmp}
-	cd iso_build/mnt/; find . | cpio -o >../../$@; cd ../..
+	cd $(INITRAMFS_ROOT); find . | cpio -o >../../$@; cd ../..
 
-iso_build/mnt/sbin/init: iso_build/mnt/lib/modules/maestro-1.0/default/cmos.kmod iso_build/mnt/lib/modules/maestro-1.0/default/ps2.kmod
-	yes | SYSROOT='iso_build/mnt/' blimp install solfege
-	echo 'install' >iso_build/mnt/etc/hostname
-	echo '/sbin/install' >iso_build/mnt/etc/solfege/startup
-	echo 'tmpfs			/tmp	tmpfs	rw		0		0' >iso_build/mnt/etc/fstab
-	echo 'procfs			/proc	procfs	rw		0		2' >>iso_build/mnt/etc/fstab
-	mkdir iso_build/mnt/{proc,tmp}
+$(INITRAMFS_ROOT)/sbin/init: $(MODULES_PATH)/cmos.kmod $(MODULES_PATH)/ps2.kmod
+	yes | SYSROOT='$(INITRAMFS_ROOT)' blimp install solfege
+	echo 'install' >$(INITRAMFS_ROOT)/etc/hostname
+	echo '/sbin/install' >$(INITRAMFS_ROOT)/etc/solfege/startup
+	mkdir $(INITRAMFS_ROOT)/{proc,tmp}
 
-iso_build/mnt/lib/modules/maestro-1.0/default/cmos.kmod:
-	git clone https://github.com/llenotre/maestro_cmos iso_build/maestro_cmos/
-	KERN_SRC=../maestro make -C iso_build/maestro_cmos
-	mkdir -p iso_build/mnt/lib/modules/maestro-1.0/default/
-	cp iso_build/maestro_cmos/cmos.kmod $@
+$(MODULES_PATH)/cmos.kmod:
+	yes | SYSROOT='$(INITRAMFS_ROOT)' blimp install maestro-cmos
 
-iso_build/mnt/lib/modules/maestro-1.0/default/ps2.kmod:
-	git clone https://github.com/llenotre/maestro_ps2 iso_build/maestro_ps2/
-	KERN_SRC=../maestro make -C iso_build/maestro_ps2
-	mkdir -p iso_build/mnt/lib/modules/maestro-1.0/default/
-	cp iso_build/maestro_ps2/ps2.kmod $@
+$(MODULES_PATH)/ps2.kmod:
+	yes | SYSROOT='$(INITRAMFS_ROOT)' blimp install maestro-ps2
 
-iso_build/mnt/sbin/install:
+$(INITRAMFS_ROOT)/sbin/install:
 	cargo build --release --target $(TARGET) -Zbuild-std
-	mkdir -p iso_build/mnt/sbin/
+	mkdir -p $(INITRAMFS_ROOT)/sbin/
 	cp -v target/$(TARGET)/release/maestro_install $@
-	mkdir -v iso_build/mnt/lang/
-	cp -v lang/* iso_build/mnt/lang/
+	mkdir -v $(INITRAMFS_ROOT)/lang/
+	cp -v lang/* $(INITRAMFS_ROOT)/lang/
 
 clean:
 	rm -rf iso_build/
