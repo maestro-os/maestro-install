@@ -22,9 +22,9 @@ checksum = "bef38d45163c2f1dde094a7dfd33ccf595c92905c8f8f4fdc18d06fb1037718a"
 
 [[package]]
 name = "bytes"
-version = "1.3.0"
+version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dfb24e866b15a1af2a1b663f10c6b6b8f397a84aadb828f12e5b289ec23a3a3c"
+checksum = "89b2fd2a0dcf38d7971e2194b6b6eebab45ae01067456a7fd93d5547a61b70be"
 
 [[package]]
 name = "cc"
@@ -41,7 +41,7 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 [[package]]
 name = "common"
 version = "0.1.0"
-source = "git+https://github.com/llenotre/blimp#4d471ac8fe090ed15d8c70cfe25eee3cbfda70d6"
+source = "git+https://github.com/llenotre/blimp#2ff65da6c6c6d455ee812336e5a0bc19798c90c5"
 dependencies = [
  "bytes",
  "flate2",
@@ -66,7 +66,7 @@ dependencies = [
 [[package]]
 name = "fdisk"
 version = "0.1.0"
-source = "git+https://github.com/llenotre/maestro-utils#ae67e2805f7d392e8f8062e244fec13a7a10fcaf"
+source = "git+https://github.com/llenotre/maestro-utils#da17a768adf6e077cf7de8920121c590dee827d2"
 dependencies = [
  "libc",
  "utils",
@@ -386,7 +386,7 @@ checksum = "84a22b9f218b40614adcb3f4ff08b703773ad44fa9423e4e0d346d5db86e4ebc"
 [[package]]
 name = "utils"
 version = "0.1.0"
-source = "git+https://github.com/llenotre/maestro-utils#ae67e2805f7d392e8f8062e244fec13a7a10fcaf"
+source = "git+https://github.com/llenotre/maestro-utils#da17a768adf6e077cf7de8920121c590dee827d2"
 dependencies = [
  "cc",
  "libc",
