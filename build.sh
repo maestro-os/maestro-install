@@ -34,5 +34,5 @@ echo 'install' >$INITRAMFS_ROOT/etc/hostname
 echo '/sbin/install' >$INITRAMFS_ROOT/etc/solfege/startup
 
 # Create ISO file
-cd $INITRAMFS_ROOT; find . | cpio -o >../../$@; cd ../..
+cd $INITRAMFS_ROOT; find . | cpio -o >../../$GRUB_ROOT/boot/initramfs; cd ../..
 grub-mkrescue -o maestro.iso iso_build/iso/
