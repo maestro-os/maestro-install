@@ -88,7 +88,7 @@ impl InstallInfo {
 					start: desc.start,
 					size: desc.size,
 
-					part_type: desc.part_type.clone(),
+					part_type: desc.part_type.as_str().try_into().unwrap(), // TODO handle error
 
 					uuid: None, // TODO random
 
