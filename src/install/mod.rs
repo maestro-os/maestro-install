@@ -210,7 +210,9 @@ impl InstallInfo {
 	}
 
 	/// Installs packages on the system.
-	fn install_packages(&self) -> Result<(), Box<dyn Error>> {
+	///
+	/// `mnt_path` is the path to the root filesystem's mountpoint.
+	fn install_packages(&self, mnt_path: &Path) -> Result<(), Box<dyn Error>> {
 		println!("Install packages...");
 		println!();
 
@@ -239,8 +241,23 @@ impl InstallInfo {
 	}
 
 	/// Sets localization options.
-	fn set_locales(&self) -> Result<(), Box<dyn Error>> {
-		// TODO
+	///
+	/// `mnt_path` is the path to the root filesystem's mountpoint.
+	fn set_locales(&self, mnt_path: &Path) -> Result<(), Box<dyn Error>> {
+		let path = mnt_path.join("etc").join("locale.conf");
+
+		let mut file = OpenOptions::new()
+			.read(true)
+			.write(true)
+			.create(true)
+			.truncate(true)
+			.open(path)?;
+
+		let locale = self.lang.as_ref().unwrap().get_locale();
+		let content = format!("LC_ALL={}\nLANG={}\n", locale, locale);
+		file.write(content.as_bytes())?;
+
+		// TODO generate locale
 		todo!();
 	}
 
@@ -268,7 +285,9 @@ impl InstallInfo {
 	/// - `/etc/shadow`
 	/// - `/etc/group`
 	/// - The home directory for each user
-	fn create_users(&self) -> Result<(), Box<dyn Error>> {
+	///
+	/// `mnt_path` is the path to the root filesystem's mountpoint.
+	fn create_users(&self, mnt_path: &Path) -> Result<(), Box<dyn Error>> {
 		// TODO
 		todo!();
 	}
@@ -282,8 +301,7 @@ impl InstallInfo {
 		if status.success() {
 			Ok(())
 		} else {
-			// TODO
-			todo!();
+			Err("Cannot unmount filesystems".into())
 		}
 	}
 
@@ -315,16 +333,16 @@ impl InstallInfo {
 		self.create_dirs(&mnt_path)?;
 
 		progress.log(&format!("\nInstall packages\n"));
-		self.install_packages()?;
+		self.install_packages(&mnt_path)?;
 
 		progress.log(&format!("\nSet locales\n"));
-		self.set_locales()?;
+		self.set_locales(&mnt_path)?;
 
 		progress.log(&format!("\nSet hostname\n"));
 		self.set_hostname(&mnt_path)?;
 
 		progress.log(&format!("\nCreate users and groups\n"));
-		self.create_users()?;
+		self.create_users(&mnt_path)?;
 
 		progress.log(&format!("\nUnmount filesystems\n"));
 		self.unmount_filesystems()?;

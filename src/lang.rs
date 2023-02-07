@@ -20,6 +20,9 @@ pub struct Language {
 	name: String,
 	/// The display name of the language.
 	display_name: String,
+
+	/// The locale corresponding to the language.
+	locale: String,
 }
 
 impl Language {
@@ -45,6 +48,11 @@ impl Language {
 		}
 
 		Ok(langs)
+	}
+
+	/// Returns the locale associated with the language.
+	pub fn get_locale(&self) -> &str {
+		&self.locale
 	}
 }
 
