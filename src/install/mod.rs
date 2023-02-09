@@ -3,6 +3,7 @@
 use crate::lang::Language;
 use crate::prompt::InstallPrompt;
 use fdisk::disk::Disk;
+use fdisk::partition::GUID;
 use fdisk::partition::Partition;
 use fdisk::partition::PartitionTable;
 use fdisk::partition::PartitionTableType;
@@ -16,6 +17,8 @@ use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
+
+// TODO Use InstallProgress instead of printing directly
 
 /// Structure representing a partition to be created.
 #[derive(Clone, Deserialize, Serialize)]
@@ -84,13 +87,15 @@ impl InstallInfo {
 
 		let partitions = self.partitions.iter()
 			.map(|desc| {
+				let uuid = GUID([0; 16]); // TODO random
+
 				Partition {
 					start: desc.start,
 					size: desc.size,
 
 					part_type: desc.part_type.as_str().try_into().unwrap(), // TODO handle error
 
-					uuid: None, // TODO random
+					uuid: Some(uuid),
 
 					bootable: desc.bootable,
 				}
@@ -367,6 +372,8 @@ pub struct InstallProgress<'p> {
 impl<'p> InstallProgress<'p> {
 	/// Inserts the given logs.
 	pub fn log(&mut self, s: &str) {
+		print!("{}", s);
+
 		self.logs
 			.append(&mut s.split('\n').map(|s| s.to_owned()).collect());
 		// FIXME self.prompt.update_progress(self);

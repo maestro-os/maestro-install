@@ -1,4 +1,6 @@
 {
 	"name": "en",
-	"display_name": "English"
+	"display_name": "English",
+
+	"locale": "en_US.UTF-8"
 }
