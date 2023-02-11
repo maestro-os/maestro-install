@@ -12,11 +12,18 @@ use serde::Serialize;
 use std::error::Error;
 use std::fmt;
 use std::fs::OpenOptions;
+use std::fs::Permissions;
 use std::fs;
 use std::io::Write;
+use std::os::unix::prelude::PermissionsExt;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
+use utils::user::Group;
+use utils::user::Shadow;
+use utils::user::User;
+use utils::user;
+use utils::util::get_timestamp;
 
 // TODO Use InstallProgress instead of printing directly
 
@@ -87,7 +94,7 @@ impl InstallInfo {
 
 		let partitions = self.partitions.iter()
 			.map(|desc| {
-				let uuid = GUID([0; 16]); // TODO random
+				let uuid = GUID::random().unwrap(); // TODO handle error
 
 				Partition {
 					start: desc.start,
@@ -117,14 +124,43 @@ impl InstallInfo {
 
 	/// Creates a filesystem on each partition.
 	fn create_filesystems(&self) -> Result<(), Box<dyn Error>> {
-		// TODO
-		todo!();
+		for (i, part) in self.partitions.iter().enumerate() {
+			// TODO support nvme
+			let mut dev_path = self.selected_disk.clone();
+			dev_path.push(format!("{}", i));
+
+			// TODO use ext4
+			let status = Command::new("mkfs.ext2")
+				.arg(dev_path)
+				.status()?;
+
+			if !status.success() {
+				return Err(format!("Cannot create filesystem on partition number {}", i).into());
+			}
+		}
+
+		Ok(())
 	}
 
 	/// Mounts filesystems to install the system on them.
 	fn mount_filesystems(&self) -> Result<(), Box<dyn Error>> {
-		// TODO
-		todo!();
+		// TODO ensure partitions are mount in the right order
+		for (i, part) in self.partitions.iter().enumerate() {
+			// TODO support nvme
+			let mut dev_path = self.selected_disk.clone();
+			dev_path.push(format!("{}", i));
+
+			let status = Command::new("mount")
+				.arg(dev_path)
+				.arg(&part.mount_path)
+				.status()?;
+
+			if !status.success() {
+				return Err(format!("Cannot mount partition at `{}`", part.mount_path).into());
+			}
+		}
+
+		Ok(())
 	}
 
 	/// Creates the folder hierarchy on the disk.
@@ -293,8 +329,85 @@ impl InstallInfo {
 	///
 	/// `mnt_path` is the path to the root filesystem's mountpoint.
 	fn create_users(&self, mnt_path: &Path) -> Result<(), Box<dyn Error>> {
-		// TODO
-		todo!();
+		// Write /etc/passwd
+		let users = vec![
+			User {
+				login_name: "root".into(),
+				password: "x".into(),
+				uid: 0,
+				gid: 0,
+				comment: "".into(),
+				home: "/root".into(),
+				interpreter: "/bin/bash".into(),
+			},
+
+			User {
+				login_name: self.admin_user.clone(),
+				password: "x".into(),
+				uid: 1000,
+				gid: 1000,
+				comment: "".into(),
+				home: format!("/home/{}", self.admin_user).into(),
+				interpreter: "/bin/bash".into(),
+			}
+		];
+		let passwd_path = mnt_path.join("etc/passwd");
+		user::write_passwd(&passwd_path, &users)?;
+		fs::set_permissions(passwd_path, Permissions::from_mode(0o644))?;
+
+		// Write /etc/shadow
+		let admin_pass = user::hash_password(&self.admin_pass);
+		let last_change = (get_timestamp().as_secs() / 3600 / 24) as u32;
+		let shadows = vec![
+			Shadow {
+				login_name: "root".into(),
+				password: admin_pass.clone(),
+				last_change,
+				minimum_age: None,
+				maximum_age: None,
+				warning_period: None,
+				inactivity_period: None,
+				account_expiration: None,
+				reserved: "".into(),
+			},
+
+			Shadow {
+				login_name: self.admin_user.clone(),
+				password: admin_pass,
+				last_change,
+				minimum_age: None,
+				maximum_age: None,
+				warning_period: None,
+				inactivity_period: None,
+				account_expiration: None,
+				reserved: "".into(),
+			}
+		];
+		let shadow_path = mnt_path.join("etc/shadow");
+		user::write_shadow(&shadow_path, &shadows)?;
+		fs::set_permissions(shadow_path, Permissions::from_mode(0o600))?;
+
+		// Write /etc/group
+		let groups = vec![
+			Group {
+				group_name: "root".into(),
+				password: "x".into(),
+				gid: 0,
+				users_list: "root".into(),
+			},
+
+			Group {
+				group_name: self.admin_user.clone(),
+				password: "x".into(),
+				gid: 1000,
+				users_list: self.admin_user.clone(),
+			}
+		];
+		let group_path = mnt_path.join("etc/group");
+		user::write_group(&group_path, &groups)?;
+		fs::set_permissions(group_path, Permissions::from_mode(0o644))?;
+
+		Ok(())
 	}
 
 	/// Unmounts filesystems to finalize the installation.
