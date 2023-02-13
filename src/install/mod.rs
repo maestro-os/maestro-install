@@ -1,5 +1,7 @@
 //! TODO doc
 
+use common::Environment;
+use common::repository::Repository;
 use crate::lang::Language;
 use crate::prompt::InstallPrompt;
 use fdisk::disk::Disk;
@@ -257,28 +259,18 @@ impl InstallInfo {
 		println!("Install packages...");
 		println!();
 
-		let _packages = vec![
-			"bash",
-			"blimp",
-			"coreutils",
-			"diffutils",
-			"file",
-			"findutils",
-			"gawk",
-			"grub",
-			"gzip",
-			"m4",
-			"maestro-utils",
-			"musl",
-			"ncurses",
-			"sed",
-			"solfege",
-			"tar",
-			"xz",
-		];
+		let env = Environment::with_root(mnt_path.into()).unwrap();
+		// TODO add option to use remote repo
+		let repo = Repository::load("/local_repo".into())?;
 
-		// TODO
-		todo!();
+		for pkg in repo.list_packages()? {
+			println!("Installing package `{}` (version {})...", pkg.get_name(), pkg.get_version());
+
+			let archive_path = repo.get_archive_path(pkg.get_name(), pkg.get_version());
+			env.install(&pkg, &archive_path)?;
+		}
+
+		Ok(())
 	}
 
 	/// Sets localization options.
@@ -299,7 +291,8 @@ impl InstallInfo {
 		file.write(content.as_bytes())?;
 
 		// TODO generate locale
-		todo!();
+
+		Ok(())
 	}
 
 	/// Creates the hostname file.
