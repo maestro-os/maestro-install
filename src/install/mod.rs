@@ -5,6 +5,7 @@ use common::repository::Repository;
 use crate::lang::Language;
 use crate::prompt::InstallPrompt;
 use fdisk::disk::Disk;
+use fdisk::disk;
 use fdisk::partition::GUID;
 use fdisk::partition::Partition;
 use fdisk::partition::PartitionTable;
@@ -120,6 +121,7 @@ impl InstallInfo {
 		disk.partition_table = partition_table;
 
 		disk.write()?;
+		disk::read_partitions(&self.selected_disk)?;
 
 		Ok(())
 	}
@@ -127,9 +129,11 @@ impl InstallInfo {
 	/// Creates a filesystem on each partition.
 	fn create_filesystems(&self) -> Result<(), Box<dyn Error>> {
 		for (i, part) in self.partitions.iter().enumerate() {
+			let part_nbr = i + 1;
+
 			// TODO support nvme
-			let mut dev_path = self.selected_disk.clone();
-			dev_path.push(format!("{}", i));
+			let mut dev_path = self.selected_disk.clone().into_os_string();
+			dev_path.push(format!("{}", part_nbr));
 
 			// TODO use ext4
 			let status = Command::new("mkfs.ext2")
@@ -148,9 +152,11 @@ impl InstallInfo {
 	fn mount_filesystems(&self) -> Result<(), Box<dyn Error>> {
 		// TODO ensure partitions are mount in the right order
 		for (i, part) in self.partitions.iter().enumerate() {
+			let part_nbr = i + 1;
+
 			// TODO support nvme
-			let mut dev_path = self.selected_disk.clone();
-			dev_path.push(format!("{}", i));
+			let mut dev_path = self.selected_disk.clone().into_os_string();
+			dev_path.push(format!("{}", part_nbr));
 
 			let status = Command::new("mount")
 				.arg(dev_path)

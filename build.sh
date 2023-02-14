@@ -16,15 +16,18 @@ mkdir -pv $GRUB_ROOT/boot/grub
 cp -v grub.cfg $GRUB_ROOT/boot/grub/
 
 # Create directories hierarchy
-mkdir -pv $INITRAMFS_ROOT/{dev,etc,lang,proc,sbin,tmp}
+mkdir -pv $INITRAMFS_ROOT/{dev,etc,lang,proc,sbin,tmp,usr/lib/blimp}
 
 # Compile and install installer
 cargo build --release --target $TARGET -Zbuild-std
 cp -v target/$TARGET/release/maestro_install $INITRAMFS_ROOT/sbin/install
 cp -v lang/* $INITRAMFS_ROOT/lang/
 
-# Install required packages
-yes | SYSROOT="$INITRAMFS_ROOT" blimp install maestro solfege maestro-cmos maestro-ps2
+# Copy packages required to be installed on the system
+# TODO copy repo
+
+# Install packages required by the installer
+yes | SYSROOT="$INITRAMFS_ROOT" blimp install maestro solfege maestro-cmos maestro-ps2 maestro-utils
 
 # Move kernel to GRUB
 mv -v $INITRAMFS_ROOT/boot/maestro $GRUB_ROOT/boot/
