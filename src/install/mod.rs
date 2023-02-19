@@ -45,7 +45,7 @@ pub struct PartitionDesc {
 	pub bootable: bool,
 
 	/// The path at which the partition is to be mounted for installation.
-	pub mount_path: String,
+	pub mount_path: PathBuf,
 }
 
 impl fmt::Display for PartitionDesc {
@@ -54,13 +54,13 @@ impl fmt::Display for PartitionDesc {
 			write!(
 				fmt,
 				"{} - start: {}; size: {} sectors, bootable",
-				self.mount_path, self.start, self.size
+				self.mount_path.display(), self.start, self.size
 			)
 		} else {
 			write!(
 				fmt,
 				"{} - start: {}; size: {} sectors",
-				self.mount_path, self.start, self.size
+				self.mount_path.display(), self.start, self.size
 			)
 		}
 	}
@@ -150,21 +150,31 @@ impl InstallInfo {
 
 	/// Mounts filesystems to install the system on them.
 	fn mount_filesystems(&self) -> Result<(), Box<dyn Error>> {
-		// TODO ensure partitions are mount in the right order
-		for (i, part) in self.partitions.iter().enumerate() {
+		// Ensure partitions are mount in the right order
+		let mut parts: Vec<(usize, &PartitionDesc)> = self.partitions.iter()
+			.enumerate()
+			.collect();
+		parts.sort_unstable_by(|(_, a), (_, b)| {
+			a.mount_path.cmp(&b.mount_path).reverse()
+		});
+
+		for (i, part) in parts {
 			let part_nbr = i + 1;
 
 			// TODO support nvme
 			let mut dev_path = self.selected_disk.clone().into_os_string();
 			dev_path.push(format!("{}", part_nbr));
 
+			let mnt_path = common::util::concat_paths(Path::new("/mnt"), &part.mount_path);
+			fs::create_dir_all(&mnt_path)?;
+
 			let status = Command::new("mount")
 				.arg(dev_path)
-				.arg(&part.mount_path)
+				.arg(&mnt_path)
 				.status()?;
 
 			if !status.success() {
-				return Err(format!("Cannot mount partition at `{}`", part.mount_path).into());
+				return Err(format!("Cannot mount partition at `{}`", mnt_path.display()).into());
 			}
 		}
 
@@ -433,7 +443,7 @@ impl InstallInfo {
 			progress: 0,
 		};
 
-		let mnt_path = PathBuf::from("mnt/");
+		let mnt_path = PathBuf::from("/mnt");
 		progress.log(&format!("Create directory `{}`\n", mnt_path.display()));
 		fs::create_dir(&mnt_path)?;
 

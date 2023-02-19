@@ -264,7 +264,7 @@ impl InstallPrompt for TermPrompt {
 
 							bootable: true,
 
-							mount_path: "/boot".to_owned(),
+							mount_path: "/boot".into(),
 						};
 						// TODO swap
 						let root_start = boot_part.start + boot_part.size;
@@ -277,7 +277,7 @@ impl InstallPrompt for TermPrompt {
 
 							bootable: false,
 
-							mount_path: "/".to_owned(),
+							mount_path: "/".into(),
 						};
 
 						self.infos.partitions = vec![
