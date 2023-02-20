@@ -271,9 +271,6 @@ impl InstallInfo {
 	///
 	/// `mnt_path` is the path to the root filesystem's mountpoint.
 	fn install_packages(&self, mnt_path: &Path) -> Result<(), Box<dyn Error>> {
-		println!("Install packages...");
-		println!();
-
 		fs::create_dir_all(mnt_path.join("usr/lib/blimp"))?;
 
 		let env = Environment::with_root(mnt_path.into()).unwrap();

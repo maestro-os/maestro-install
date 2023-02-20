@@ -12,5 +12,4 @@ serde_json = "1.0.87"
 utils = { git = "https://github.com/llenotre/maestro-utils" }
 
 [profile.release]
-lto = true
 strip = true
