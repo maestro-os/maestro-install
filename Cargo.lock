@@ -27,6 +27,27 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "89b2fd2a0dcf38d7971e2194b6b6eebab45ae01067456a7fd93d5547a61b70be"
 
 [[package]]
+name = "bzip2"
+version = "0.4.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bdb116a6ef3f6c3698828873ad02c3014b3c85cadb88496095628e3ef1e347f8"
+dependencies = [
+ "bzip2-sys",
+ "libc",
+]
+
+[[package]]
+name = "bzip2-sys"
+version = "0.1.11+1.0.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "736a955f3fa7875102d57c82b8cac37ec45224a07fd32d58f9f7a186b6cd4cdc"
+dependencies = [
+ "cc",
+ "libc",
+ "pkg-config",
+]
+
+[[package]]
 name = "cc"
 version = "1.0.79"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -41,9 +62,10 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 [[package]]
 name = "common"
 version = "0.1.0"
-source = "git+https://github.com/llenotre/blimp#906a06176c3e08c730ad5d177f62152c97bddff4"
+source = "git+https://github.com/llenotre/blimp#8ae428d5cea3af90fcd4db9ba249faf94eb3ccd6"
 dependencies = [
  "bytes",
+ "bzip2",
  "flate2",
  "futures",
  "futures-util",
@@ -66,7 +88,7 @@ dependencies = [
 [[package]]
 name = "fdisk"
 version = "0.1.0"
-source = "git+https://github.com/llenotre/maestro-utils#63d1905534bce6d5ef4af7cc02b5edea0c9b5153"
+source = "git+https://github.com/llenotre/maestro-utils#0bd77f8ca73e51e8214ee38dd43b4acfc56b1f9c"
 dependencies = [
  "libc",
  "utils",
@@ -336,9 +358,9 @@ dependencies = [
 
 [[package]]
 name = "slab"
-version = "0.4.7"
+version = "0.4.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4614a76b2a8be0058caa9dbbaf66d988527d86d003c11a94fbd335d7661edcef"
+checksum = "6528351c9bc8ab22353f9d776db39a20288e8d6c37ef8cfe3317cf875eecfc2d"
 dependencies = [
  "autocfg",
 ]
@@ -386,7 +408,7 @@ checksum = "84a22b9f218b40614adcb3f4ff08b703773ad44fa9423e4e0d346d5db86e4ebc"
 [[package]]
 name = "utils"
 version = "0.1.0"
-source = "git+https://github.com/llenotre/maestro-utils#63d1905534bce6d5ef4af7cc02b5edea0c9b5153"
+source = "git+https://github.com/llenotre/maestro-utils#0bd77f8ca73e51e8214ee38dd43b4acfc56b1f9c"
 dependencies = [
  "cc",
  "libc",

@@ -154,9 +154,7 @@ impl InstallInfo {
 		let mut parts: Vec<(usize, &PartitionDesc)> = self.partitions.iter()
 			.enumerate()
 			.collect();
-		parts.sort_unstable_by(|(_, a), (_, b)| {
-			a.mount_path.cmp(&b.mount_path).reverse()
-		});
+		parts.sort_unstable_by(|(_, a), (_, b)| a.mount_path.cmp(&b.mount_path));
 
 		for (i, part) in parts {
 			let part_nbr = i + 1;
@@ -260,9 +258,10 @@ impl InstallInfo {
 
 		for path in paths {
 			let path = mnt_path.clone().join(path);
-			println!("Create directory `{}`", path.display());
-
-			fs::create_dir(path)?;
+			if !path.exists() {
+				println!("Create directory `{}`", path.display());
+				fs::create_dir(path)?;
+			}
 		}
 
 		Ok(())
