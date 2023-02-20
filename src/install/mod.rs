@@ -274,6 +274,8 @@ impl InstallInfo {
 		println!("Install packages...");
 		println!();
 
+		fs::create_dir_all(mnt_path.join("usr/lib/blimp"))?;
+
 		let env = Environment::with_root(mnt_path.into()).unwrap();
 		// TODO add option to use remote repo
 		let repo = Repository::load("/local_repo".into())?;
@@ -292,7 +294,7 @@ impl InstallInfo {
 	///
 	/// `mnt_path` is the path to the root filesystem's mountpoint.
 	fn set_locales(&self, mnt_path: &Path) -> Result<(), Box<dyn Error>> {
-		let path = mnt_path.join("etc").join("locale.conf");
+		let path = mnt_path.join("etc/locale.conf");
 
 		let mut file = OpenOptions::new()
 			.read(true)
@@ -314,7 +316,7 @@ impl InstallInfo {
 	///
 	/// `mnt_path` is the path to the root filesystem's mountpoint.
 	fn set_hostname(&self, mnt_path: &Path) -> Result<(), Box<dyn Error>> {
-		let path = mnt_path.join("etc").join("hostname");
+		let path = mnt_path.join("etc/hostname");
 
 		let mut file = OpenOptions::new()
 			.read(true)
