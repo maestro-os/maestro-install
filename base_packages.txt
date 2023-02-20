@@ -1,4 +1,8 @@
 bash
+blimp
 coreutils
+grub
+maestro-cmos
+maestro-ps2
 maestro-utils
 solfege

@@ -24,7 +24,12 @@ cp -v target/$TARGET/release/maestro_install $INITRAMFS_ROOT/sbin/install
 cp -v lang/* $INITRAMFS_ROOT/lang/
 
 # Copy packages required to be installed on the system
-# TODO copy repo
+if [ ! -z "$LOCAL_REPOSITORIES" ]; then
+	mkdir -pv "$INITRAMFS_ROOT/local_repo"
+	for name in $(cat base_packages.txt); do
+		cp -rv "$LOCAL_REPOSITORIES/maestro" "$INITRAMFS_ROOT/local_repo"
+	done
+fi
 
 # Install packages required by the installer
 yes | SYSROOT="$INITRAMFS_ROOT" blimp install maestro solfege maestro-cmos maestro-ps2 maestro-utils
