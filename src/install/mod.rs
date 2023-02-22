@@ -17,6 +17,7 @@ use std::fmt;
 use std::fs::OpenOptions;
 use std::fs::Permissions;
 use std::fs;
+use std::io::ErrorKind;
 use std::io::Write;
 use std::os::unix::prelude::PermissionsExt;
 use std::path::Path;
@@ -258,9 +259,13 @@ impl InstallInfo {
 
 		for path in paths {
 			let path = mnt_path.clone().join(path);
-			if !path.exists() {
-				println!("Create directory `{}`", path.display());
-				fs::create_dir(path)?;
+
+			println!("Create directory `{}`", path.display());
+			match fs::create_dir(path) {
+				Ok(_) => {},
+				Err(e) if e.kind() == ErrorKind::AlreadyExists => {},
+
+				Err(e) => return Err(e.into()),
 			}
 		}
 

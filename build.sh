@@ -27,7 +27,7 @@ cp -v lang/* $INITRAMFS_ROOT/lang/
 if [ ! -z "$LOCAL_REPOSITORIES" ]; then
 	mkdir -pv "$INITRAMFS_ROOT/local_repo"
 	for name in $(cat base_packages.txt); do
-		cp -rv "$LOCAL_REPOSITORIES/maestro" "$INITRAMFS_ROOT/local_repo"
+		cp -rv "$LOCAL_REPOSITORIES/$name" "$INITRAMFS_ROOT/local_repo"
 	done
 fi
 

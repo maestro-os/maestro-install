@@ -62,7 +62,7 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 [[package]]
 name = "common"
 version = "0.1.0"
-source = "git+https://github.com/llenotre/blimp#8ae428d5cea3af90fcd4db9ba249faf94eb3ccd6"
+source = "git+https://github.com/llenotre/blimp#856fd6d921b20d94265f187cc6f8835f52aed1c8"
 dependencies = [
  "bytes",
  "bzip2",
@@ -88,7 +88,7 @@ dependencies = [
 [[package]]
 name = "fdisk"
 version = "0.1.0"
-source = "git+https://github.com/llenotre/maestro-utils#0bd77f8ca73e51e8214ee38dd43b4acfc56b1f9c"
+source = "git+https://github.com/llenotre/maestro-utils#3a6a57e2f510ec841d0a6a55032562e9f3adb1e7"
 dependencies = [
  "libc",
  "utils",
@@ -408,7 +408,7 @@ checksum = "84a22b9f218b40614adcb3f4ff08b703773ad44fa9423e4e0d346d5db86e4ebc"
 [[package]]
 name = "utils"
 version = "0.1.0"
-source = "git+https://github.com/llenotre/maestro-utils#0bd77f8ca73e51e8214ee38dd43b4acfc56b1f9c"
+source = "git+https://github.com/llenotre/maestro-utils#3a6a57e2f510ec841d0a6a55032562e9f3adb1e7"
 dependencies = [
  "cc",
  "libc",
