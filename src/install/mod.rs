@@ -292,6 +292,22 @@ impl InstallInfo {
 		Ok(())
 	}
 
+	/// Installs the bootloader.
+	///
+	/// `mnt_path` is the path to the root filesystem's mountpoint.
+	fn install_bootloader(&self, mnt_path: &Path) -> Result<(), Box<dyn Error>> {
+		let status = Command::new("grub-install")
+			.arg("--target=i386-pc")
+			.arg(&self.selected_disk)
+			.status()?;
+
+		if status.success() {
+			Ok(())
+		} else {
+			Err("Cannot install bootloader".into())
+		}
+	}
+
 	/// Sets localization options.
 	///
 	/// `mnt_path` is the path to the root filesystem's mountpoint.
@@ -423,9 +439,12 @@ impl InstallInfo {
 	}
 
 	/// Unmounts filesystems to finalize the installation.
-	fn unmount_filesystems(&self) -> Result<(), Box<dyn Error>> {
+	///
+	/// `mnt_path` is the path to the root filesystem's mountpoint.
+	fn unmount_filesystems(&self, mnt_path: &Path) -> Result<(), Box<dyn Error>> {
 		let status = Command::new("umount")
-			.args(&["-R", "mnt/"])
+			.arg("-R")
+			.arg(mnt_path)
 			.status()?;
 
 		if status.success() {
@@ -465,6 +484,9 @@ impl InstallInfo {
 		progress.log(&format!("\nInstall packages\n"));
 		self.install_packages(&mnt_path)?;
 
+		//progress.log(&format!("\nInstall bootloader\n"));
+		//self.install_bootloader(&mnt_path)?;
+
 		progress.log(&format!("\nSet locales\n"));
 		self.set_locales(&mnt_path)?;
 
@@ -475,7 +497,7 @@ impl InstallInfo {
 		self.create_users(&mnt_path)?;
 
 		progress.log(&format!("\nUnmount filesystems\n"));
-		self.unmount_filesystems()?;
+		self.unmount_filesystems(&mnt_path)?;
 
 		progress.log(&format!("\nDone!\n"));
 

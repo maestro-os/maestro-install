@@ -88,7 +88,7 @@ dependencies = [
 [[package]]
 name = "fdisk"
 version = "0.1.0"
-source = "git+https://github.com/llenotre/maestro-utils#3a6a57e2f510ec841d0a6a55032562e9f3adb1e7"
+source = "git+https://github.com/llenotre/maestro-utils#df0cd3095f4617134efaf621f5712f6c09e7e4d4"
 dependencies = [
  "libc",
  "utils",
@@ -367,9 +367,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "1.0.107"
+version = "1.0.108"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1f4064b5b16e03ae50984a5a8ed5d4f8803e6bc1fd170a3cda91a1be4b18e3f5"
+checksum = "d56e159d99e6c2b93995d171050271edb50ecc5288fbc7cc17de8fdce4e58c14"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -408,7 +408,7 @@ checksum = "84a22b9f218b40614adcb3f4ff08b703773ad44fa9423e4e0d346d5db86e4ebc"
 [[package]]
 name = "utils"
 version = "0.1.0"
-source = "git+https://github.com/llenotre/maestro-utils#3a6a57e2f510ec841d0a6a55032562e9f3adb1e7"
+source = "git+https://github.com/llenotre/maestro-utils#df0cd3095f4617134efaf621f5712f6c09e7e4d4"
 dependencies = [
  "cc",
  "libc",
