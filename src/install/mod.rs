@@ -484,8 +484,8 @@ impl InstallInfo {
 		progress.log(&format!("\nInstall packages\n"));
 		self.install_packages(&mnt_path)?;
 
-		//progress.log(&format!("\nInstall bootloader\n"));
-		//self.install_bootloader(&mnt_path)?;
+		progress.log(&format!("\nInstall bootloader\n"));
+		self.install_bootloader(&mnt_path)?;
 
 		progress.log(&format!("\nSet locales\n"));
 		self.set_locales(&mnt_path)?;

@@ -32,7 +32,7 @@ if [ ! -z "$LOCAL_REPOSITORIES" ]; then
 fi
 
 # Install packages required by the installer
-yes | SYSROOT="$INITRAMFS_ROOT" blimp install maestro maestro-cmos maestro-ps2 maestro-utils solfege #grub
+yes | SYSROOT="$INITRAMFS_ROOT" blimp install maestro maestro-cmos maestro-ps2 maestro-utils solfege grub
 
 # Move kernel to GRUB
 mv -v $INITRAMFS_ROOT/boot/maestro $GRUB_ROOT/boot/
