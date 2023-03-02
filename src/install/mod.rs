@@ -298,6 +298,7 @@ impl InstallInfo {
 	fn install_bootloader(&self, mnt_path: &Path) -> Result<(), Box<dyn Error>> {
 		let status = Command::new("grub-install")
 			.arg("--target=i386-pc")
+			.arg(format!("--boot-directory={}", mnt_path.join("boot/grub").display()))
 			.arg(&self.selected_disk)
 			.status()?;
 
@@ -481,8 +482,8 @@ impl InstallInfo {
 		progress.log(&format!("\nCreate directory structure\n"));
 		self.create_dirs(&mnt_path)?;
 
-		progress.log(&format!("\nInstall packages\n"));
-		self.install_packages(&mnt_path)?;
+		//progress.log(&format!("\nInstall packages\n"));
+		//self.install_packages(&mnt_path)?;
 
 		progress.log(&format!("\nInstall bootloader\n"));
 		self.install_bootloader(&mnt_path)?;
