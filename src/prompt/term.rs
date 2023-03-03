@@ -255,8 +255,20 @@ impl InstallPrompt for TermPrompt {
 							.unwrap()
 							.unwrap();
 
-						let boot_part = PartitionDesc {
+						let bios_boot_part = PartitionDesc {
 							start: 2048,
+							size: 64,
+
+							// BIOS boot
+							part_type: "21686148-6449-6E6F-744E-656564454649".to_owned(),
+
+							bootable: false,
+
+							mount_path: None,
+						};
+
+						let boot_part = PartitionDesc {
+							start: bios_boot_part.start + bios_boot_part.size,
 							size: 262144,
 
 							// EFI System
@@ -264,9 +276,11 @@ impl InstallPrompt for TermPrompt {
 
 							bootable: true,
 
-							mount_path: "/boot".into(),
+							mount_path: Some("/boot".into()),
 						};
+
 						// TODO swap
+
 						let root_start = boot_part.start + boot_part.size;
 						let root_part = PartitionDesc {
 							start: root_start,
@@ -277,10 +291,11 @@ impl InstallPrompt for TermPrompt {
 
 							bootable: false,
 
-							mount_path: "/".into(),
+							mount_path: Some("/".into()),
 						};
 
 						self.infos.partitions = vec![
+							bios_boot_part,
 							boot_part,
 							// TODO swap
 							root_part,

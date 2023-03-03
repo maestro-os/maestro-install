@@ -46,22 +46,28 @@ pub struct PartitionDesc {
 	pub bootable: bool,
 
 	/// The path at which the partition is to be mounted for installation.
-	pub mount_path: PathBuf,
+	///
+	/// If None, the partition shouldn't be mounted.
+	pub mount_path: Option<PathBuf>,
 }
 
 impl fmt::Display for PartitionDesc {
 	fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+		let mount_path = self.mount_path.as_ref()
+			.map(|p| format!("{}", p.display()))
+			.unwrap_or(String::new());
+
 		if self.bootable {
 			write!(
 				fmt,
 				"{} - start: {}; size: {} sectors, bootable",
-				self.mount_path.display(), self.start, self.size
+				mount_path, self.start, self.size
 			)
 		} else {
 			write!(
 				fmt,
 				"{} - start: {}; size: {} sectors",
-				self.mount_path.display(), self.start, self.size
+				mount_path, self.start, self.size
 			)
 		}
 	}
@@ -130,10 +136,13 @@ impl InstallInfo {
 	/// Creates a filesystem on each partition.
 	fn create_filesystems(&self) -> Result<(), Box<dyn Error>> {
 		for (i, part) in self.partitions.iter().enumerate() {
-			let part_nbr = i + 1;
+			let Some(mnt_path) = &part.mount_path else {
+				continue;
+			};
 
 			// TODO support nvme
 			let mut dev_path = self.selected_disk.clone().into_os_string();
+			let part_nbr = i + 1;
 			dev_path.push(format!("{}", part_nbr));
 
 			// TODO use ext4
@@ -158,13 +167,16 @@ impl InstallInfo {
 		parts.sort_unstable_by(|(_, a), (_, b)| a.mount_path.cmp(&b.mount_path));
 
 		for (i, part) in parts {
-			let part_nbr = i + 1;
+			let Some(mnt_path) = &part.mount_path else {
+				continue;
+			};
 
 			// TODO support nvme
 			let mut dev_path = self.selected_disk.clone().into_os_string();
+			let part_nbr = i + 1;
 			dev_path.push(format!("{}", part_nbr));
 
-			let mnt_path = common::util::concat_paths(Path::new("/mnt"), &part.mount_path);
+			let mnt_path = common::util::concat_paths(Path::new("/mnt"), mnt_path);
 			fs::create_dir_all(&mnt_path)?;
 
 			let status = Command::new("mount")
@@ -298,7 +310,8 @@ impl InstallInfo {
 	fn install_bootloader(&self, mnt_path: &Path) -> Result<(), Box<dyn Error>> {
 		let status = Command::new("grub-install")
 			.arg("--target=i386-pc")
-			.arg(format!("--boot-directory={}", mnt_path.join("boot/grub").display()))
+			.arg(format!("--boot-directory={}", mnt_path.join("boot").display()))
+			.arg("-v")
 			.arg(&self.selected_disk)
 			.status()?;
 
@@ -482,8 +495,8 @@ impl InstallInfo {
 		progress.log(&format!("\nCreate directory structure\n"));
 		self.create_dirs(&mnt_path)?;
 
-		//progress.log(&format!("\nInstall packages\n"));
-		//self.install_packages(&mnt_path)?;
+		progress.log(&format!("\nInstall packages\n"));
+		self.install_packages(&mnt_path)?;
 
 		progress.log(&format!("\nInstall bootloader\n"));
 		self.install_bootloader(&mnt_path)?;
