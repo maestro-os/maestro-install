@@ -1,4 +1,4 @@
-//! TODO doc
+//! This module handles the installation procedure.
 
 use common::Environment;
 use common::repository::Repository;
