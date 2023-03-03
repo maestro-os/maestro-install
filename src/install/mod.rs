@@ -311,15 +311,22 @@ impl InstallInfo {
 		let status = Command::new("grub-install")
 			.arg("--target=i386-pc")
 			.arg(format!("--boot-directory={}", mnt_path.join("boot").display()))
-			.arg("-v")
 			.arg(&self.selected_disk)
 			.status()?;
 
-		if status.success() {
-			Ok(())
-		} else {
-			Err("Cannot install bootloader".into())
+		if !status.success() {
+			return Err("Cannot install bootloader".into());
 		}
+
+		// Write `grub.cfg`
+		let mut file = OpenOptions::new()
+			.create(true)
+			.truncate(true)
+			.write(true)
+			.open(mnt_path.join("boot/grub/grub.cfg"))?;
+		file.write_all(include_bytes!("grub.cfg"))?;
+
+		Ok(())
 	}
 
 	/// Sets localization options.

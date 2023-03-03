@@ -1,6 +1,7 @@
 bash
 blimp
 coreutils
+maestro
 maestro-cmos
 maestro-ps2
 maestro-utils

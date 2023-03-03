@@ -257,7 +257,7 @@ impl InstallPrompt for TermPrompt {
 
 						let bios_boot_part = PartitionDesc {
 							start: 2048,
-							size: 64,
+							size: 2048,
 
 							// BIOS boot
 							part_type: "21686148-6449-6E6F-744E-656564454649".to_owned(),
