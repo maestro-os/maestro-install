@@ -1,32 +1,32 @@
 //! This module handles the installation procedure.
 
-use common::Environment;
-use common::repository::Repository;
 use crate::lang::Language;
 use crate::prompt::InstallPrompt;
-use fdisk::disk::Disk;
+use common::repository::Repository;
+use common::Environment;
 use fdisk::disk;
-use fdisk::partition::GUID;
+use fdisk::disk::Disk;
 use fdisk::partition::Partition;
 use fdisk::partition::PartitionTable;
 use fdisk::partition::PartitionTableType;
+use fdisk::partition::GUID;
 use serde::Deserialize;
 use serde::Serialize;
 use std::error::Error;
 use std::fmt;
+use std::fs;
 use std::fs::OpenOptions;
 use std::fs::Permissions;
-use std::fs;
 use std::io::ErrorKind;
 use std::io::Write;
 use std::os::unix::prelude::PermissionsExt;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
+use utils::user;
 use utils::user::Group;
 use utils::user::Shadow;
 use utils::user::User;
-use utils::user;
 use utils::util::get_timestamp;
 
 // TODO Use InstallProgress instead of printing directly
@@ -53,7 +53,9 @@ pub struct PartitionDesc {
 
 impl fmt::Display for PartitionDesc {
 	fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
-		let mount_path = self.mount_path.as_ref()
+		let mount_path = self
+			.mount_path
+			.as_ref()
 			.map(|p| format!("{}", p.display()))
 			.unwrap_or(String::new());
 
@@ -100,9 +102,14 @@ pub struct InstallInfo {
 impl InstallInfo {
 	/// Creates partitions on the disk.
 	fn partition_disks(&self) -> Result<(), Box<dyn Error>> {
-		println!("Creating partition table on `{}`...", self.selected_disk.display());
+		println!(
+			"Creating partition table on `{}`...",
+			self.selected_disk.display()
+		);
 
-		let partitions = self.partitions.iter()
+		let partitions = self
+			.partitions
+			.iter()
 			.map(|desc| {
 				let uuid = GUID::random().unwrap(); // TODO handle error
 
@@ -146,9 +153,7 @@ impl InstallInfo {
 			dev_path.push(format!("{}", part_nbr));
 
 			// TODO use ext4
-			let status = Command::new("mkfs.ext2")
-				.arg(dev_path)
-				.status()?;
+			let status = Command::new("mkfs.ext2").arg(dev_path).status()?;
 
 			if !status.success() {
 				return Err(format!("Cannot create filesystem on partition number {}", i).into());
@@ -161,9 +166,7 @@ impl InstallInfo {
 	/// Mounts filesystems to install the system on them.
 	fn mount_filesystems(&self) -> Result<(), Box<dyn Error>> {
 		// Ensure partitions are mount in the right order
-		let mut parts: Vec<(usize, &PartitionDesc)> = self.partitions.iter()
-			.enumerate()
-			.collect();
+		let mut parts: Vec<(usize, &PartitionDesc)> = self.partitions.iter().enumerate().collect();
 		parts.sort_unstable_by(|(_, a), (_, b)| a.mount_path.cmp(&b.mount_path));
 
 		for (i, part) in parts {
@@ -274,8 +277,8 @@ impl InstallInfo {
 
 			println!("Create directory `{}`", path.display());
 			match fs::create_dir(path) {
-				Ok(_) => {},
-				Err(e) if e.kind() == ErrorKind::AlreadyExists => {},
+				Ok(_) => {}
+				Err(e) if e.kind() == ErrorKind::AlreadyExists => {}
 
 				Err(e) => return Err(e.into()),
 			}
@@ -295,7 +298,11 @@ impl InstallInfo {
 		let repo = Repository::load("/local_repo".into())?;
 
 		for pkg in repo.list_packages()? {
-			println!("Installing package `{}` (version {})...", pkg.get_name(), pkg.get_version());
+			println!(
+				"Installing package `{}` (version {})...",
+				pkg.get_name(),
+				pkg.get_version()
+			);
 
 			let archive_path = repo.get_archive_path(pkg.get_name(), pkg.get_version());
 			env.install(&pkg, &archive_path)?;
@@ -310,7 +317,10 @@ impl InstallInfo {
 	fn install_bootloader(&self, mnt_path: &Path) -> Result<(), Box<dyn Error>> {
 		let status = Command::new("grub-install")
 			.arg("--target=i386-pc")
-			.arg(format!("--boot-directory={}", mnt_path.join("boot").display()))
+			.arg(format!(
+				"--boot-directory={}",
+				mnt_path.join("boot").display()
+			))
 			.arg(&self.selected_disk)
 			.status()?;
 
@@ -344,7 +354,7 @@ impl InstallInfo {
 
 		let locale = self.lang.as_ref().unwrap().get_locale();
 		let content = format!("LC_ALL={}\nLANG={}\n", locale, locale);
-		file.write(content.as_bytes())?;
+		file.write_all(content.as_bytes())?;
 
 		// TODO generate locale
 
@@ -363,7 +373,7 @@ impl InstallInfo {
 			.create(true)
 			.truncate(true)
 			.open(path)?;
-		file.write(self.hostname.as_bytes())?;
+		file.write_all(self.hostname.as_bytes())?;
 
 		Ok(())
 	}
@@ -389,7 +399,6 @@ impl InstallInfo {
 				home: "/root".into(),
 				interpreter: "/bin/bash".into(),
 			},
-
 			User {
 				login_name: self.admin_user.clone(),
 				password: "x".into(),
@@ -398,7 +407,7 @@ impl InstallInfo {
 				comment: "".into(),
 				home: format!("/home/{}", self.admin_user).into(),
 				interpreter: "/bin/bash".into(),
-			}
+			},
 		];
 		let passwd_path = mnt_path.join("etc/passwd");
 		user::write_passwd(&passwd_path, &users)?;
@@ -419,7 +428,6 @@ impl InstallInfo {
 				account_expiration: None,
 				reserved: "".into(),
 			},
-
 			Shadow {
 				login_name: self.admin_user.clone(),
 				password: admin_pass,
@@ -430,7 +438,7 @@ impl InstallInfo {
 				inactivity_period: None,
 				account_expiration: None,
 				reserved: "".into(),
-			}
+			},
 		];
 		let shadow_path = mnt_path.join("etc/shadow");
 		user::write_shadow(&shadow_path, &shadows)?;
@@ -444,13 +452,12 @@ impl InstallInfo {
 				gid: 0,
 				users_list: "root".into(),
 			},
-
 			Group {
 				group_name: self.admin_user.clone(),
 				password: "x".into(),
 				gid: 1000,
 				users_list: self.admin_user.clone(),
-			}
+			},
 		];
 		let group_path = mnt_path.join("etc/group");
 		user::write_group(&group_path, &groups)?;
@@ -463,10 +470,7 @@ impl InstallInfo {
 	///
 	/// `mnt_path` is the path to the root filesystem's mountpoint.
 	fn unmount_filesystems(&self, mnt_path: &Path) -> Result<(), Box<dyn Error>> {
-		let status = Command::new("umount")
-			.arg("-R")
-			.arg(mnt_path)
-			.status()?;
+		let status = Command::new("umount").arg("-R").arg(mnt_path).status()?;
 
 		if status.success() {
 			Ok(())
@@ -490,37 +494,37 @@ impl InstallInfo {
 		progress.log(&format!("Create directory `{}`\n", mnt_path.display()));
 		fs::create_dir(&mnt_path)?;
 
-		progress.log(&format!("\nPartition disk\n"));
+		progress.log("\nPartition disk\n");
 		self.partition_disks()?;
 
-		progress.log(&format!("\nCreate filesystems\n"));
+		progress.log("\nCreate filesystems\n");
 		self.create_filesystems()?;
 
-		progress.log(&format!("\nMount filesystems\n"));
+		progress.log("\nMount filesystems\n");
 		self.mount_filesystems()?;
 
-		progress.log(&format!("\nCreate directory structure\n"));
+		progress.log("\nCreate directory structure\n");
 		self.create_dirs(&mnt_path)?;
 
-		progress.log(&format!("\nInstall packages\n"));
+		progress.log("\nInstall packages\n");
 		self.install_packages(&mnt_path)?;
 
-		progress.log(&format!("\nInstall bootloader\n"));
+		progress.log("\nInstall bootloader\n");
 		self.install_bootloader(&mnt_path)?;
 
-		progress.log(&format!("\nSet locales\n"));
+		progress.log("\nSet locales\n");
 		self.set_locales(&mnt_path)?;
 
-		progress.log(&format!("\nSet hostname\n"));
+		progress.log("\nSet hostname\n");
 		self.set_hostname(&mnt_path)?;
 
-		progress.log(&format!("\nCreate users and groups\n"));
+		progress.log("\nCreate users and groups\n");
 		self.create_users(&mnt_path)?;
 
-		progress.log(&format!("\nUnmount filesystems\n"));
+		progress.log("\nUnmount filesystems\n");
 		self.unmount_filesystems(&mnt_path)?;
 
-		progress.log(&format!("\nDone!\n"));
+		progress.log("\nDone!\n");
 
 		Ok(())
 	}

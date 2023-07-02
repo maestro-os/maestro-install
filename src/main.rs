@@ -13,7 +13,7 @@ use std::process::exit;
 
 fn main() {
 	// Getting prompt type
-	let prompt_type = env::args().skip(1).next().unwrap_or("term".to_owned());
+	let prompt_type = env::args().nth(1).unwrap_or("term".to_owned());
 	// Creating prompt
 	let mut prompt = match prompt_type.as_str() {
 		"term" => TermPrompt::new(),

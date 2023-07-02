@@ -1,5 +1,7 @@
 //! This module implements installation prompt from terminal.
 
+use super::InstallPrompt;
+use super::InstallStep;
 use crate::install::InstallInfo;
 use crate::install::InstallProgress;
 use crate::install::PartitionDesc;
@@ -7,8 +9,6 @@ use crate::lang::Language;
 use crate::util;
 use fdisk::disk::Disk;
 use std::process::exit;
-use super::InstallPrompt;
-use super::InstallStep;
 use utils::util::ByteSize;
 
 /// Prompts text from the user on the terminal.
@@ -21,7 +21,7 @@ use utils::util::ByteSize;
 /// again.
 /// If no error message is provided, no message is printed and the function prompts for input again
 /// directly.
-fn prompt<V: Fn(&str) -> Result<(), Option<String>>> (
+fn prompt<V: Fn(&str) -> Result<(), Option<String>>>(
 	prompt_text: &str,
 	hidden: bool,
 	validator: V,
@@ -34,7 +34,7 @@ fn prompt<V: Fn(&str) -> Result<(), Option<String>>> (
 
 		match validator(&input) {
 			Ok(()) => return input,
-			Err(Some(e)) => eprintln!("{}", e),
+			Err(Some(e)) => eprintln!("{e}"),
 
 			_ => {}
 		}
@@ -82,7 +82,7 @@ impl InstallPrompt for TermPrompt {
 		};
 
 		if let Some(step_name) = curr_step.get_name() {
-			println!("|> Step {}: {}", curr_step.get_number(), step_name);
+			println!("|> Step {}: {step_name}", curr_step.get_number());
 			println!();
 		}
 
@@ -117,7 +117,7 @@ impl InstallPrompt for TermPrompt {
 						"?" => {
 							println!("Available languages:");
 							for (_, l) in available_langs.iter() {
-								println!("- {}", l);
+								println!("- {l}");
 							}
 
 							println!();
@@ -129,7 +129,7 @@ impl InstallPrompt for TermPrompt {
 							if let Some(lang) = available_langs.get(&lang) {
 								self.infos.lang = Some(lang.clone());
 							} else {
-								eprintln!("\nInvalid language `{}`!\n", lang);
+								eprintln!("\nInvalid language `{lang}`!\n");
 							}
 						}
 					}
@@ -163,7 +163,7 @@ impl InstallPrompt for TermPrompt {
 
 			InstallStep::Partitions => {
 				let disks = Disk::list().unwrap(); // TODO Handle error
-				// TODO Filter out disks that don't have enough space
+								   // TODO Filter out disks that don't have enough space
 				if disks.is_empty() {
 					eprintln!("No disks are available for installation. Exiting...");
 					exit(1);
@@ -173,9 +173,7 @@ impl InstallPrompt for TermPrompt {
 					println!("Available disks and partitions:");
 					for dev_path in disks.iter() {
 						// TODO handle error
-						let disk = Disk::read(dev_path.to_path_buf())
-							.unwrap()
-							.unwrap();
+						let disk = Disk::read(dev_path.to_path_buf()).unwrap().unwrap();
 
 						println!(
 							"- {} (sectors: {}, size: {})",
@@ -185,19 +183,13 @@ impl InstallPrompt for TermPrompt {
 						);
 
 						for p in &disk.partition_table.partitions {
-							println!("\t- {}", p);
+							println!("\t- {p}");
 						}
 					}
 
 					// If only one disk is available, de facto select it
 					if disks.len() == 1 {
-						break disks
-							.iter()
-							.next()
-							.unwrap()
-							.to_str()
-							.unwrap()
-							.into();
+						break disks.first().unwrap().to_str().unwrap().into();
 					}
 
 					println!();
@@ -207,14 +199,12 @@ impl InstallPrompt for TermPrompt {
 						|input| {
 							let exists = disks
 								.iter()
-								.filter(|dev_path| dev_path.to_str() == Some(input))
-								.next()
-								.is_some();
+								.any(|dev_path| dev_path.to_str() == Some(input));
 
 							if input.is_empty() {
 								Ok(())
 							} else if !exists {
-								Err(Some(format!("Disk `{}` doesn't exist", input)))
+								Err(Some(format!("Disk `{input}` doesn't exist")))
 							} else {
 								Ok(())
 							}
@@ -227,7 +217,10 @@ impl InstallPrompt for TermPrompt {
 				};
 
 				println!();
-				println!("Installing system on disk `{}`", self.infos.selected_disk.display());
+				println!(
+					"Installing system on disk `{}`",
+					self.infos.selected_disk.display()
+				);
 				println!("Partitioning options:");
 				println!("1 - Wipe disk and install system automaticaly (warning: this operation will destroy all data on the disk)");
 				// TODO:
@@ -247,13 +240,10 @@ impl InstallPrompt for TermPrompt {
 					"1" => {
 						let disk_path = disks
 							.into_iter()
-							.filter(|dev_path| dev_path == &self.infos.selected_disk)
-							.next()
+							.find(|dev_path| dev_path == &self.infos.selected_disk)
 							.unwrap();
 						// TODO handle error
-						let disk = Disk::read(disk_path)
-							.unwrap()
-							.unwrap();
+						let disk = Disk::read(disk_path).unwrap().unwrap();
 
 						let bios_boot_part = PartitionDesc {
 							start: 2048,
