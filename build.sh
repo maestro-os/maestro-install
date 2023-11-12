@@ -2,14 +2,13 @@
 
 set -e
 
-export CC=clang
-
-TARGET=i686-unknown-linux-musl
-
-INITRAMFS_ROOT=iso_build/mnt
-MODULES_PATH="$INITRAMFS_ROOT/lib/modules/maestro-1.0/default"
+# If not specified, set build target to default
+if [ -z $TARGET ]; then
+  TARGET=i686-unknown-linux-musl
+fi
 
 GRUB_ROOT=iso_build/iso
+INITRAMFS_ROOT=iso_build/mnt
 
 # Setup grub config
 mkdir -pv $GRUB_ROOT/boot/grub
@@ -24,15 +23,15 @@ cp -v target/$TARGET/release/maestro_install $INITRAMFS_ROOT/sbin/install
 cp -v lang/* $INITRAMFS_ROOT/lang/
 
 # Copy packages required to be installed on the system
-if [ ! -z "$LOCAL_REPOSITORIES" ]; then
+if [ ! -z "$LOCAL_REPO" ]; then
 	mkdir -pv "$INITRAMFS_ROOT/local_repo"
 	for name in $(cat base_packages.txt); do
-		cp -rv "$LOCAL_REPOSITORIES/$name" "$INITRAMFS_ROOT/local_repo"
+		cp -rv "$LOCAL_REPO/$name" "$INITRAMFS_ROOT/local_repo"
 	done
 fi
 
 # Install packages required by the installer
-yes | SYSROOT="$INITRAMFS_ROOT" blimp install maestro maestro-cmos maestro-ps2 maestro-utils solfege grub
+yes | SYSROOT="$INITRAMFS_ROOT" blimp install grub maestro maestro-ps2 maestro-utils solfege
 
 # Move kernel to GRUB
 mv -v $INITRAMFS_ROOT/boot/maestro $GRUB_ROOT/boot/

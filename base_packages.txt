@@ -1,8 +1,8 @@
 bash
 blimp
 coreutils
+grub
 maestro
-maestro-cmos
 maestro-ps2
 maestro-utils
 solfege

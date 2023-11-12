@@ -57,7 +57,7 @@ impl fmt::Display for PartitionDesc {
 			.mount_path
 			.as_ref()
 			.map(|p| format!("{}", p.display()))
-			.unwrap_or(String::new());
+			.unwrap_or_default();
 
 		if self.bootable {
 			write!(
@@ -143,9 +143,9 @@ impl InstallInfo {
 	/// Creates a filesystem on each partition.
 	fn create_filesystems(&self) -> Result<(), Box<dyn Error>> {
 		for (i, part) in self.partitions.iter().enumerate() {
-			let Some(mnt_path) = &part.mount_path else {
+			if part.mount_path.is_none() {
 				continue;
-			};
+			}
 
 			// TODO support nvme
 			let mut dev_path = self.selected_disk.clone().into_os_string();
@@ -273,13 +273,11 @@ impl InstallInfo {
 		}
 
 		for path in paths {
-			let path = mnt_path.clone().join(path);
-
+			let path = mnt_path.join(path);
 			println!("Create directory `{}`", path.display());
 			match fs::create_dir(path) {
 				Ok(_) => {}
 				Err(e) if e.kind() == ErrorKind::AlreadyExists => {}
-
 				Err(e) => return Err(e.into()),
 			}
 		}
