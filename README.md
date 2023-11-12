@@ -49,7 +49,7 @@ Create a local repository for built packages:
 mkdir local_repo/
 ```
 
-> Now, if you are cross compiling, [setup the package manager for cross compilation](TODO).
+> Now, if you are cross compiling, [setup the package manager for cross compilation](https://github.com/llenotre/blimp#cross-compilation).
 
 Then, build required packages:
 
