@@ -47,22 +47,37 @@ Create a local repository for built packages:
 
 ```sh
 mkdir local_repo/
+export LOCAL_REPO="local_repo/" # Required later when building the ISO image
 ```
 
 > Now, if you are cross compiling, [setup the package manager for cross compilation](https://github.com/llenotre/blimp#cross-compilation).
 
-Then, build required packages:
+
+### Temporary fixes
+
+**Temporary fix**: Since the build system is not yet working entirely, dependencies that are required for building packages are not installed automatically.
+
+> Manually build and install the package `maestro-build` to be able to build kernel modules:
+>
+> ```sh
+> blimp-builder blimp-packages/maestro-build local_repo/ # Build
+> sudo blimp install maestro-build                       # Install from local repository
+> ```
+
+> Patch `blimp` to disable network support (because it requires `libssl` as a dependency, which is not yet supported):
+>
+> ```sh
+> sed -i 's/--features network//' blimp-packages/blimp/build-hook
+> ```
+
+
+
+### Build required packages
 
 ```sh
 for pkg in $(cat base_packages.txt); do
     blimp-builder blimp-packages/$pkg local_repo/
 done
-```
-
-Finally, set the local repository to be used for the ISO build:
-
-```sh
-export LOCAL_REPO="local_repo/"
 ```
 
 
