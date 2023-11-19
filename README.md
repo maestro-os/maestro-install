@@ -55,7 +55,7 @@ export LOCAL_REPO="local_repo/" # Required later when building the ISO image
 
 ### Temporary fixes
 
-**Temporary fix**: Since the build system is not yet working entirely, dependencies that are required for building packages are not installed automatically.
+Since the build system is not yet working entirely, dependencies that are required for building packages are not installed automatically. Thus, the following fixes are currently required:
 
 > Manually build and install the package `maestro-build` to be able to build kernel modules:
 >

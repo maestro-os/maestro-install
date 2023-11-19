@@ -321,7 +321,6 @@ impl InstallInfo {
 			))
 			.arg(&self.selected_disk)
 			.status()?;
-
 		if !status.success() {
 			return Err("Cannot install bootloader".into());
 		}
@@ -333,7 +332,6 @@ impl InstallInfo {
 			.write(true)
 			.open(mnt_path.join("boot/grub/grub.cfg"))?;
 		file.write_all(include_bytes!("grub.cfg"))?;
-
 		Ok(())
 	}
 
