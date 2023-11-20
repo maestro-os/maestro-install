@@ -50,8 +50,6 @@ mkdir local_repo/
 export LOCAL_REPO="local_repo/" # Required later when building the ISO image
 ```
 
-> Now, if you are cross compiling, [setup the package manager for cross compilation](https://github.com/llenotre/blimp#cross-compilation).
-
 
 ### Temporary fixes
 
@@ -61,7 +59,7 @@ Since the build system is not yet working entirely, dependencies that are requir
 >
 > ```sh
 > blimp-builder blimp-packages/maestro-build local_repo/ # Build
-> sudo blimp install maestro-build                       # Install from local repository
+> sudo LOCAL_REPO="$LOCAL_REPO" blimp install maestro-build                       # Install from local repository
 > ```
 
 > Patch `blimp` to disable network support (because it requires `libssl` as a dependency, which is not yet supported):
@@ -73,6 +71,10 @@ Since the build system is not yet working entirely, dependencies that are requir
 
 
 ### Build required packages
+
+> Now, if you are cross compiling, [setup the package manager for cross compilation](https://github.com/llenotre/blimp#cross-compilation).
+
+Compile packages required by the installer:
 
 ```sh
 for pkg in $(cat base_packages.txt); do
