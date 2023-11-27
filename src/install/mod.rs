@@ -13,7 +13,6 @@ use fdisk::partition::GUID;
 use serde::Deserialize;
 use serde::Serialize;
 use std::error::Error;
-use std::fmt;
 use std::fs;
 use std::fs::OpenOptions;
 use std::fs::Permissions;
@@ -23,6 +22,7 @@ use std::os::unix::prelude::PermissionsExt;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
+use std::{fmt, io};
 use utils::user;
 use utils::user::Group;
 use utils::user::Shadow;
@@ -53,25 +53,14 @@ pub struct PartitionDesc {
 
 impl fmt::Display for PartitionDesc {
 	fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
-		let mount_path = self
-			.mount_path
-			.as_ref()
-			.map(|p| format!("{}", p.display()))
-			.unwrap_or_default();
-
-		if self.bootable {
-			write!(
-				fmt,
-				"{} - start: {}; size: {} sectors, bootable",
-				mount_path, self.start, self.size
-			)
-		} else {
-			write!(
-				fmt,
-				"{} - start: {}; size: {} sectors",
-				mount_path, self.start, self.size
-			)
+		if let Some(mount_path) = &self.mount_path {
+			write!(fmt, "{} ", mount_path.display())?;
 		}
+		write!(fmt, "- start: {}; size: {} sectors", self.start, self.size)?;
+		if self.bootable {
+			write!(fmt, ", bootable")?;
+		}
+		Ok(())
 	}
 }
 
@@ -88,9 +77,9 @@ pub struct InstallInfo {
 	/// The system's hostname.
 	pub hostname: String,
 
-	/// The admin's username.
+	/// Admin username.
 	pub admin_user: String,
-	/// The admin's password.
+	/// Hashed admin password.
 	pub admin_pass: String,
 
 	/// The path to the disk on which the system is to be installed.
@@ -111,9 +100,8 @@ impl InstallInfo {
 			.partitions
 			.iter()
 			.map(|desc| {
-				let uuid = GUID::random().unwrap(); // TODO handle error
-
-				Partition {
+				let uuid = GUID::random()?;
+				Ok(Partition {
 					start: desc.start,
 					size: desc.size,
 
@@ -122,10 +110,9 @@ impl InstallInfo {
 					uuid: Some(uuid),
 
 					bootable: desc.bootable,
-				}
+				})
 			})
-			.collect();
-
+			.collect::<io::Result<Vec<_>>>()?;
 		let partition_table = PartitionTable {
 			table_type: PartitionTableType::GPT,
 			partitions,
@@ -133,7 +120,6 @@ impl InstallInfo {
 
 		let mut disk = Disk::read(self.selected_disk.clone())?.unwrap();
 		disk.partition_table = partition_table;
-
 		disk.write()?;
 		disk::read_partitions(&self.selected_disk)?;
 
@@ -148,18 +134,14 @@ impl InstallInfo {
 			}
 
 			// TODO support nvme
-			let mut dev_path = self.selected_disk.clone().into_os_string();
-			let part_nbr = i + 1;
-			dev_path.push(format!("{}", part_nbr));
+			let dev_path = format!("{}{}", self.selected_disk.display(), i + 1);
 
 			// TODO use ext4
 			let status = Command::new("mkfs.ext2").arg(dev_path).status()?;
-
 			if !status.success() {
-				return Err(format!("Cannot create filesystem on partition number {}", i).into());
+				return Err(format!("Cannot create filesystem on partition number {i}").into());
 			}
 		}
-
 		Ok(())
 	}
 
@@ -175,9 +157,7 @@ impl InstallInfo {
 			};
 
 			// TODO support nvme
-			let mut dev_path = self.selected_disk.clone().into_os_string();
-			let part_nbr = i + 1;
-			dev_path.push(format!("{}", part_nbr));
+			let dev_path = format!("{}{}", self.selected_disk.display(), i + 1);
 
 			let mnt_path = common::util::concat_paths(Path::new("/mnt"), mnt_path);
 			fs::create_dir_all(&mnt_path)?;
@@ -186,12 +166,10 @@ impl InstallInfo {
 				.arg(dev_path)
 				.arg(&mnt_path)
 				.status()?;
-
 			if !status.success() {
 				return Err(format!("Cannot mount partition at `{}`", mnt_path.display()).into());
 			}
 		}
-
 		Ok(())
 	}
 
@@ -302,11 +280,9 @@ impl InstallInfo {
 				pkg.get_name(),
 				pkg.get_version()
 			);
-
 			let archive_path = repo.get_archive_path(pkg.get_name(), pkg.get_version());
 			env.install(&pkg, &archive_path)?;
 		}
-
 		Ok(())
 	}
 
@@ -341,7 +317,6 @@ impl InstallInfo {
 	/// `mnt_path` is the path to the root filesystem's mountpoint.
 	fn set_locales(&self, mnt_path: &Path) -> Result<(), Box<dyn Error>> {
 		let path = mnt_path.join("etc/locale.conf");
-
 		let mut file = OpenOptions::new()
 			.read(true)
 			.write(true)
@@ -350,7 +325,7 @@ impl InstallInfo {
 			.open(path)?;
 
 		let locale = self.lang.as_ref().unwrap().get_locale();
-		let content = format!("LC_ALL={}\nLANG={}\n", locale, locale);
+		let content = format!("LC_ALL={locale}\nLANG={locale}\n");
 		file.write_all(content.as_bytes())?;
 
 		// TODO generate locale
@@ -363,7 +338,6 @@ impl InstallInfo {
 	/// `mnt_path` is the path to the root filesystem's mountpoint.
 	fn set_hostname(&self, mnt_path: &Path) -> Result<(), Box<dyn Error>> {
 		let path = mnt_path.join("etc/hostname");
-
 		let mut file = OpenOptions::new()
 			.read(true)
 			.write(true)
@@ -412,7 +386,7 @@ impl InstallInfo {
 
 		// Write /etc/shadow
 		let last_change = (get_timestamp().as_secs() / 3600 / 24) as u32;
-		let shadows = vec![
+		let shadows = [
 			Shadow {
 				login_name: "root".into(),
 				password: self.admin_pass.clone(),
@@ -441,7 +415,7 @@ impl InstallInfo {
 		fs::set_permissions(shadow_path, Permissions::from_mode(0o600))?;
 
 		// Write /etc/group
-		let groups = vec![
+		let groups = [
 			Group {
 				group_name: "root".into(),
 				password: "x".into(),
@@ -467,7 +441,6 @@ impl InstallInfo {
 	/// `mnt_path` is the path to the root filesystem's mountpoint.
 	fn unmount_filesystems(&self, mnt_path: &Path) -> Result<(), Box<dyn Error>> {
 		let status = Command::new("umount").arg("-R").arg(mnt_path).status()?;
-
 		if status.success() {
 			Ok(())
 		} else {
@@ -540,10 +513,10 @@ pub struct InstallProgress<'p> {
 impl<'p> InstallProgress<'p> {
 	/// Inserts the given logs.
 	pub fn log(&mut self, s: &str) {
-		print!("{}", s);
+		print!("{s}");
 
 		self.logs
-			.append(&mut s.split('\n').map(|s| s.to_owned()).collect());
+			.append(&mut s.split('\n').map(str::to_owned).collect());
 		// FIXME self.prompt.update_progress(self);
 	}
 
