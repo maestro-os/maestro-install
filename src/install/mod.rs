@@ -199,89 +199,90 @@ impl InstallInfo {
 	///
 	/// `mnt_path` is the path to the root filesystem's mountpoint.
 	fn create_dirs(&self, mnt_path: &Path) -> Result<(), Box<dyn Error>> {
-		let mut paths: Vec<PathBuf> = vec![
-			"bin".into(),
-			"boot".into(),
-			"dev".into(),
-			"etc".into(),
-			"home".into(),
-			"lib".into(),
-			"media".into(),
-			"mnt".into(),
-			"opt".into(),
-			"proc".into(),
-			"root".into(),
-			"run".into(),
-			"sbin".into(),
-			"srv".into(),
-			"sys".into(),
-			"tmp".into(),
-			"usr".into(),
-			"var".into(),
-			"etc/opt".into(),
-			"etc/sysconfig".into(),
-			"lib/firmware".into(),
-			"media/floppy".into(),
-			"media/cdrom".into(),
-			"run/lock".into(),
-			"run/log".into(),
-			"usr/bin".into(),
-			"usr/include".into(),
-			"usr/lib".into(),
-			"usr/local".into(),
-			"usr/sbin".into(),
-			"usr/share".into(),
-			"usr/src".into(),
-			"usr/share/color".into(),
-			"usr/share/dict".into(),
-			"usr/share/doc".into(),
-			"usr/share/info".into(),
-			"usr/share/locale".into(),
-			"usr/share/man".into(),
-			"usr/share/misc".into(),
-			"usr/share/terminfo".into(),
-			"usr/share/zoneinfo".into(),
-			"usr/local/bin".into(),
-			"usr/local/include".into(),
-			"usr/local/lib".into(),
-			"usr/local/sbin".into(),
-			"usr/local/share".into(),
-			"usr/local/src".into(),
-			"usr/local/share/color".into(),
-			"usr/local/share/dict".into(),
-			"usr/local/share/doc".into(),
-			"usr/local/share/info".into(),
-			"usr/local/share/locale".into(),
-			"usr/local/share/man".into(),
-			"usr/local/share/misc".into(),
-			"usr/local/share/terminfo".into(),
-			"usr/local/share/zoneinfo".into(),
-			"var/cache".into(),
-			"var/lib".into(),
-			"var/local".into(),
-			"var/log".into(),
-			"var/mail".into(),
-			"var/opt".into(),
-			"var/spool".into(),
-			"var/lib/color".into(),
-			"var/lib/misc".into(),
-			"var/lib/locate".into(),
-		];
-		for i in 1..=8 {
-			paths.push(format!("usr/share/man/man{}", i).into());
-			paths.push(format!("usr/local/share/man/man{}", i).into());
-		}
+		let paths = [
+			"bin",
+			"boot",
+			"dev",
+			"etc",
+			"home",
+			"lib",
+			"media",
+			"mnt",
+			"opt",
+			"proc",
+			"root",
+			"run",
+			"sbin",
+			"srv",
+			"sys",
+			"tmp",
+			"usr",
+			"var",
+			"etc/opt",
+			"etc/sysconfig",
+			"lib/firmware",
+			"media/floppy",
+			"media/cdrom",
+			"run/lock",
+			"run/log",
+			"usr/bin",
+			"usr/include",
+			"usr/lib",
+			"usr/local",
+			"usr/sbin",
+			"usr/share",
+			"usr/src",
+			"usr/share/color",
+			"usr/share/dict",
+			"usr/share/doc",
+			"usr/share/info",
+			"usr/share/locale",
+			"usr/share/man",
+			"usr/share/misc",
+			"usr/share/terminfo",
+			"usr/share/zoneinfo",
+			"usr/local/bin",
+			"usr/local/include",
+			"usr/local/lib",
+			"usr/local/sbin",
+			"usr/local/share",
+			"usr/local/src",
+			"usr/local/share/color",
+			"usr/local/share/dict",
+			"usr/local/share/doc",
+			"usr/local/share/info",
+			"usr/local/share/locale",
+			"usr/local/share/man",
+			"usr/local/share/misc",
+			"usr/local/share/terminfo",
+			"usr/local/share/zoneinfo",
+			"var/cache",
+			"var/lib",
+			"var/local",
+			"var/log",
+			"var/mail",
+			"var/opt",
+			"var/spool",
+			"var/lib/color",
+			"var/lib/misc",
+			"var/lib/locate",
+		]
+		.into_iter()
+		.map(String::from)
+		// Add man page directories
+		.chain((1..=8).map(|i| format!("usr/share/man/man{i}")))
+		.chain((1..=8).map(|i| format!("usr/local/share/man/man{i}")))
+		.map(PathBuf::from);
 
 		for path in paths {
-			let path = mnt_path.join(path);
 			println!("Create directory `{}`", path.display());
+			let path = mnt_path.join(path);
 			match fs::create_dir(path) {
 				Ok(_) => {}
 				Err(e) if e.kind() == ErrorKind::AlreadyExists => {}
 				Err(e) => return Err(e.into()),
 			}
 		}
-
 		Ok(())
 	}
 
@@ -385,7 +386,7 @@ impl InstallInfo {
 	/// `mnt_path` is the path to the root filesystem's mountpoint.
 	fn create_users(&self, mnt_path: &Path) -> Result<(), Box<dyn Error>> {
 		// Write /etc/passwd
-		let users = vec![
+		let users = [
 			User {
 				login_name: "root".into(),
 				password: "x".into(),
@@ -410,12 +411,11 @@ impl InstallInfo {
 		fs::set_permissions(passwd_path, Permissions::from_mode(0o644))?;
 
 		// Write /etc/shadow
-		let admin_pass = user::hash_password(&self.admin_pass);
 		let last_change = (get_timestamp().as_secs() / 3600 / 24) as u32;
 		let shadows = vec![
 			Shadow {
 				login_name: "root".into(),
-				password: admin_pass.clone(),
+				password: self.admin_pass.clone(),
 				last_change,
 				minimum_age: None,
 				maximum_age: None,
@@ -426,7 +426,7 @@ impl InstallInfo {
 			},
 			Shadow {
 				login_name: self.admin_user.clone(),
-				password: admin_pass,
+				password: self.admin_pass.clone(),
 				last_change,
 				minimum_age: None,
 				maximum_age: None,

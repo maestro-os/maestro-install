@@ -151,10 +151,18 @@ impl InstallPrompt for TermPrompt {
 					let pass = prompt("Type admin/root password: ", true, non_empty_validator);
 					let pass_confirm = prompt("Confirm admin/root password: ", true, |_| Ok(()));
 
+					// Check correctness
 					if pass != pass_confirm {
 						eprintln!("Passwords don't match!");
 						continue;
 					}
+					let pass = match utils::user::hash_password(&pass) {
+						Ok(p) => p,
+						Err(e) => {
+							eprintln!("Invalid password: {e}");
+							continue;
+						}
+					};
 
 					self.infos.admin_pass = pass;
 					break;
