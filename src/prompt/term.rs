@@ -11,6 +11,15 @@ use fdisk::disk::Disk;
 use std::process::exit;
 use utils::util::ByteSize;
 
+/// Resets text style.
+const CODE_RESET: &str = "\x1b[0m";
+/// Makes the text red.
+const CODE_RED: &str = "\x1b[31m";
+/// Makes the text red.
+const CODE_ORANGE: &str = "\x1b[33m";
+/// Makes the text green.
+const CODE_GREEN: &str = "\x1b[92m";
+
 /// Prompts text from the user on the terminal.
 ///
 /// Arguments:
@@ -34,8 +43,7 @@ fn prompt<V: Fn(&str) -> Result<(), Option<String>>>(
 
 		match validator(&input) {
 			Ok(()) => return input,
-			Err(Some(e)) => eprintln!("{e}"),
-
+			Err(Some(e)) => eprintln!("{CODE_ORANGE}{e}{CODE_RESET}"),
 			_ => {}
 		}
 	}
@@ -76,9 +84,8 @@ impl InstallPrompt for TermPrompt {
 	}
 
 	fn next_step(&mut self) {
-		let curr_step = match &self.curr_step {
-			Some(s) => s,
-			None => return,
+		let Some(curr_step) = &self.curr_step else {
+			return;
 		};
 
 		if let Some(step_name) = curr_step.get_name() {
@@ -88,21 +95,7 @@ impl InstallPrompt for TermPrompt {
 
 		match curr_step {
 			InstallStep::Welcome => {
-				println!(
-					"##     ##    ###    ########  ######  ######## ########   #######  
-###   ###   ## ##   ##       ##    ##    ##    ##     ## ##     ## 
-#### ####  ##   ##  ##       ##          ##    ##     ## ##     ## 
-## ### ## ##     ## ######    ######     ##    ########  ##     ## 
-##     ## ######### ##             ##    ##    ##   ##   ##     ## 
-##     ## ##     ## ##       ##    ##    ##    ##    ##  ##     ## 
-##     ## ##     ## ########  ######     ##    ##     ##  #######  "
-				);
-
-				println!();
-				println!("Welcome to the maestro installer!");
-				println!();
-				println!("To begin the installation, press ENTER.");
-
+				print!("{}", include_str!("motd"));
 				util::read_line();
 			}
 
@@ -111,7 +104,7 @@ impl InstallPrompt for TermPrompt {
 
 				while self.infos.lang.is_none() {
 					println!("Type `?` to get the list of available languages.");
-					let lang = prompt("Type the system's language: ", false, |_| Ok(()));
+					let lang = prompt("Type the system's language: ", false, non_empty_validator);
 
 					match lang.as_str() {
 						"?" => {
@@ -119,17 +112,13 @@ impl InstallPrompt for TermPrompt {
 							for (_, l) in available_langs.iter() {
 								println!("- {l}");
 							}
-
 							println!();
 						}
-
-						"" => {}
-
 						_ => {
 							if let Some(lang) = available_langs.get(&lang) {
 								self.infos.lang = Some(lang.clone());
 							} else {
-								eprintln!("\nInvalid language `{lang}`!\n");
+								eprintln!("\n{CODE_ORANGE}Invalid language `{lang}`!{CODE_RESET}\n");
 							}
 						}
 					}
@@ -153,17 +142,16 @@ impl InstallPrompt for TermPrompt {
 
 					// Check correctness
 					if pass != pass_confirm {
-						eprintln!("Passwords don't match!");
+						eprintln!("{CODE_ORANGE}Passwords don't match!{CODE_RESET}");
 						continue;
 					}
 					let pass = match utils::user::hash_password(&pass) {
 						Ok(p) => p,
 						Err(e) => {
-							eprintln!("Invalid password: {e}");
+							eprintln!("{CODE_ORANGE}Invalid password: {e}{CODE_RESET}");
 							continue;
 						}
 					};
-
 					self.infos.admin_pass = pass;
 					break;
 				}
@@ -173,7 +161,7 @@ impl InstallPrompt for TermPrompt {
 				let disks = Disk::list().unwrap(); // TODO Handle error
 								   // TODO Filter out disks that don't have enough space
 				if disks.is_empty() {
-					eprintln!("No disks are available for installation. Exiting...");
+					eprintln!("{CODE_RED}No disk is available for installation. Exiting...{CODE_RESET}");
 					exit(1);
 				}
 
@@ -230,7 +218,7 @@ impl InstallPrompt for TermPrompt {
 					self.infos.selected_disk.display()
 				);
 				println!("Partitioning options:");
-				println!("1 - Wipe disk and install system automaticaly (warning: this operation will destroy all data on the disk)");
+				println!("1 - Wipe disk and install system automatically (warning: this operation will destroy all data on the disk)");
 				// TODO:
 				//println!("2 - Manual partitioning (advanced)");
 				//println!("3 - Use free space left on disk");
@@ -241,7 +229,7 @@ impl InstallPrompt for TermPrompt {
 
 				let option = prompt("Select an option: ", false, |input| match input {
 					"1" => Ok(()),
-					_ => Err(Some(format!("Invalid option `{}`", input))),
+					_ => Err(Some(format!("Invalid option `{input}`"))),
 				});
 
 				match option.as_str() {
@@ -316,7 +304,7 @@ impl InstallPrompt for TermPrompt {
 				println!();
 				println!("The following partitions will be created:");
 				for p in self.infos.partitions.iter() {
-					println!("- {}", p);
+					println!("- {p}");
 				}
 			}
 
@@ -328,19 +316,17 @@ impl InstallPrompt for TermPrompt {
 						prompt("Confirm installation? (y/n) ", false, non_empty_validator);
 					match confirm.as_str() {
 						"y" => break,
-
 						"n" => {
-							eprintln!("Installation cancelled.");
+							eprintln!("{CODE_RED}Installation cancelled{CODE_RESET}");
 							exit(1);
 						}
-
 						_ => {}
 					}
 				}
 			}
 
 			InstallStep::Finished => {
-				println!("Installation is now finished!");
+				println!("{CODE_GREEN}Installation is now finished!{CODE_RESET}");
 				println!("To start maestro, unplug your installation medium, then press ENTER");
 
 				util::read_line();

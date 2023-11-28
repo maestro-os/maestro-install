@@ -177,7 +177,7 @@ impl InstallInfo {
 	///
 	/// `mnt_path` is the path to the root filesystem's mountpoint.
 	fn create_dirs(&self, mnt_path: &Path) -> Result<(), Box<dyn Error>> {
-		let paths = [
+		let paths = &[
 			"bin",
 			"boot",
 			"dev",
@@ -199,8 +199,6 @@ impl InstallInfo {
 			"etc/opt",
 			"etc/sysconfig",
 			"lib/firmware",
-			"media/floppy",
-			"media/cdrom",
 			"run/lock",
 			"run/log",
 			"usr/bin",
@@ -210,30 +208,22 @@ impl InstallInfo {
 			"usr/sbin",
 			"usr/share",
 			"usr/src",
-			"usr/share/color",
-			"usr/share/dict",
 			"usr/share/doc",
 			"usr/share/info",
 			"usr/share/locale",
 			"usr/share/man",
 			"usr/share/misc",
-			"usr/share/terminfo",
-			"usr/share/zoneinfo",
 			"usr/local/bin",
 			"usr/local/include",
 			"usr/local/lib",
 			"usr/local/sbin",
 			"usr/local/share",
 			"usr/local/src",
-			"usr/local/share/color",
-			"usr/local/share/dict",
 			"usr/local/share/doc",
 			"usr/local/share/info",
 			"usr/local/share/locale",
 			"usr/local/share/man",
 			"usr/local/share/misc",
-			"usr/local/share/terminfo",
-			"usr/local/share/zoneinfo",
 			"var/cache",
 			"var/lib",
 			"var/local",
@@ -241,19 +231,10 @@ impl InstallInfo {
 			"var/mail",
 			"var/opt",
 			"var/spool",
-			"var/lib/color",
 			"var/lib/misc",
-			"var/lib/locate",
-		]
-		.into_iter()
-		.map(String::from)
-		// Add man page directories
-		.chain((1..=8).map(|i| format!("usr/share/man/man{i}")))
-		.chain((1..=8).map(|i| format!("usr/local/share/man/man{i}")))
-		.map(PathBuf::from);
-
+		];
 		for path in paths {
-			println!("Create directory `{}`", path.display());
+			println!("Create directory `{path}`");
 			let path = mnt_path.join(path);
 			match fs::create_dir(path) {
 				Ok(_) => {}
@@ -275,12 +256,10 @@ impl InstallInfo {
 		let repo = Repository::load("/local_repo".into())?;
 
 		for pkg in repo.list_packages()? {
-			println!(
-				"Installing package `{}` (version {})...",
-				pkg.get_name(),
-				pkg.get_version()
-			);
-			let archive_path = repo.get_archive_path(pkg.get_name(), pkg.get_version());
+			let name = pkg.get_name();
+			let version = pkg.get_version();
+			println!("Install `{name}` (version {version})...");
+			let archive_path = repo.get_archive_path(name, version);
 			env.install(&pkg, &archive_path)?;
 		}
 		Ok(())
@@ -316,6 +295,8 @@ impl InstallInfo {
 	///
 	/// `mnt_path` is the path to the root filesystem's mountpoint.
 	fn set_locales(&self, mnt_path: &Path) -> Result<(), Box<dyn Error>> {
+		let locale = self.lang.as_ref().unwrap().get_locale();
+
 		let path = mnt_path.join("etc/locale.conf");
 		let mut file = OpenOptions::new()
 			.read(true)
@@ -323,10 +304,7 @@ impl InstallInfo {
 			.create(true)
 			.truncate(true)
 			.open(path)?;
-
-		let locale = self.lang.as_ref().unwrap().get_locale();
-		let content = format!("LC_ALL={locale}\nLANG={locale}\n");
-		file.write_all(content.as_bytes())?;
+		write!(file, "LC_ALL={locale}\nLANG={locale}\n")?;
 
 		// TODO generate locale
 
