@@ -18,6 +18,7 @@ use std::fs::OpenOptions;
 use std::fs::Permissions;
 use std::io::ErrorKind;
 use std::io::Write;
+use std::os::unix::fs::chown;
 use std::os::unix::prelude::PermissionsExt;
 use std::path::Path;
 use std::path::PathBuf;
@@ -337,6 +338,13 @@ impl InstallInfo {
 	///
 	/// `mnt_path` is the path to the root filesystem's mountpoint.
 	fn create_users(&self, mnt_path: &Path) -> Result<(), Box<dyn Error>> {
+		// Create admin user's home
+		let admin_uid = 1000;
+		let admin_home = format!("/home/{}", self.admin_user).into();
+		let admin_home_mnt = mnt_path.join(format!("home/{}", self.admin_user));
+		fs::create_dir_all(&admin_home_mnt)?;
+		chown(&admin_home_mnt, Some(admin_uid), Some(admin_uid))?;
+
 		// Write /etc/passwd
 		let users = [
 			User {
@@ -351,10 +359,10 @@ impl InstallInfo {
 			User {
 				login_name: self.admin_user.clone(),
 				password: "x".into(),
-				uid: 1000,
-				gid: 1000,
+				uid: admin_uid,
+				gid: admin_uid,
 				comment: "".into(),
-				home: format!("/home/{}", self.admin_user).into(),
+				home: admin_home,
 				interpreter: "/bin/bash".into(),
 			},
 		];
@@ -403,7 +411,7 @@ impl InstallInfo {
 			Group {
 				group_name: self.admin_user.clone(),
 				password: "x".into(),
-				gid: 1000,
+				gid: admin_uid,
 				users_list: self.admin_user.clone(),
 			},
 		];

@@ -118,7 +118,9 @@ impl InstallPrompt for TermPrompt {
 							if let Some(lang) = available_langs.get(&lang) {
 								self.infos.lang = Some(lang.clone());
 							} else {
-								eprintln!("\n{CODE_ORANGE}Invalid language `{lang}`!{CODE_RESET}\n");
+								eprintln!(
+									"\n{CODE_ORANGE}Invalid language `{lang}`!{CODE_RESET}\n"
+								);
 							}
 						}
 					}
@@ -161,7 +163,9 @@ impl InstallPrompt for TermPrompt {
 				let disks = Disk::list().unwrap(); // TODO Handle error
 								   // TODO Filter out disks that don't have enough space
 				if disks.is_empty() {
-					eprintln!("{CODE_RED}No disk is available for installation. Exiting...{CODE_RESET}");
+					eprintln!(
+						"{CODE_RED}No disk is available for installation. Exiting...{CODE_RESET}"
+					);
 					exit(1);
 				}
 
