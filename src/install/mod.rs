@@ -6,13 +6,14 @@ use common::repository::Repository;
 use common::Environment;
 use fdisk::disk;
 use fdisk::disk::Disk;
-use fdisk::partition::Partition;
+use fdisk::guid::GUID;
 use fdisk::partition::PartitionTable;
 use fdisk::partition::PartitionTableType;
-use fdisk::partition::GUID;
+use fdisk::partition::{Partition, PartitionType};
 use serde::Deserialize;
 use serde::Serialize;
 use std::error::Error;
+use std::fmt;
 use std::fs;
 use std::fs::OpenOptions;
 use std::fs::Permissions;
@@ -23,7 +24,7 @@ use std::os::unix::prelude::PermissionsExt;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
-use std::{fmt, io};
+use std::str::FromStr;
 use utils::user;
 use utils::user::Group;
 use utils::user::Shadow;
@@ -93,27 +94,24 @@ impl InstallInfo {
 	/// Creates partitions on the disk.
 	fn partition_disks(&self) -> Result<(), Box<dyn Error>> {
 		println!(
-			"Creating partition table on `{}`...",
+			"Create partition table on `{}`...",
 			self.selected_disk.display()
 		);
 
 		let partitions = self
 			.partitions
 			.iter()
-			.map(|desc| {
-				let uuid = GUID::random()?;
-				Ok(Partition {
-					start: desc.start,
-					size: desc.size,
+			.map(|desc| Partition {
+				start: desc.start,
+				size: desc.size,
 
-					part_type: desc.part_type.as_str().try_into().unwrap(), // TODO handle error
+				part_type: PartitionType::from_str(desc.part_type.as_str()).unwrap(), /* TODO handle error */
 
-					uuid: Some(uuid),
+				uuid: Some(GUID::random()),
 
-					bootable: desc.bootable,
-				})
+				bootable: desc.bootable,
 			})
-			.collect::<io::Result<Vec<_>>>()?;
+			.collect();
 		let partition_table = PartitionTable {
 			table_type: PartitionTableType::GPT,
 			partitions,
@@ -137,10 +135,12 @@ impl InstallInfo {
 			// TODO support nvme
 			let dev_path = format!("{}{}", self.selected_disk.display(), i + 1);
 
+			println!("Create filesystem on `{dev_path}`");
+
 			// TODO use ext4
 			let status = Command::new("mkfs.ext2").arg(dev_path).status()?;
 			if !status.success() {
-				return Err(format!("Cannot create filesystem on partition number {i}").into());
+				return Err(format!("Filesystem creation failed!").into());
 			}
 		}
 		Ok(())
@@ -159,10 +159,12 @@ impl InstallInfo {
 
 			// TODO support nvme
 			let dev_path = format!("{}{}", self.selected_disk.display(), i + 1);
-
 			let mnt_path = common::util::concat_paths(Path::new("/mnt"), mnt_path);
-			fs::create_dir_all(&mnt_path)?;
 
+			println!("Mount `{dev_path}` at `{}`", mnt_path.display());
+
+			// Perform mount
+			fs::create_dir_all(&mnt_path)?;
 			let status = Command::new("mount")
 				.arg(dev_path)
 				.arg(&mnt_path)
@@ -305,7 +307,8 @@ impl InstallInfo {
 			.create(true)
 			.truncate(true)
 			.open(path)?;
-		write!(file, "LC_ALL={locale}\nLANG={locale}\n")?;
+		writeln!(file, "LC_ALL={locale}")?;
+		writeln!(file, "LANG={locale}")?;
 
 		// TODO generate locale
 
@@ -445,7 +448,7 @@ impl InstallInfo {
 			progress: 0,
 		};
 
-		let mnt_path = PathBuf::from("/mnt");
+		let mnt_path = Path::new("/mnt");
 		progress.log(&format!("Create directory `{}`\n", mnt_path.display()));
 		fs::create_dir(&mnt_path)?;
 

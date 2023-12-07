@@ -1,7 +1,5 @@
 //! Installation utility for the Maestro operating system.
 
-#![feature(unix_chown)]
-
 mod install;
 mod lang;
 mod prompt;
