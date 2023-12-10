@@ -12,13 +12,13 @@ use std::process::exit;
 use utils::util::ByteSize;
 
 /// Resets text style.
-const CODE_RESET: &str = "\x1b[0m";
+pub const CODE_RESET: &str = "\x1b[0m";
 /// Makes the text red.
-const CODE_RED: &str = "\x1b[31m";
+pub const CODE_RED: &str = "\x1b[31m";
 /// Makes the text red.
-const CODE_ORANGE: &str = "\x1b[33m";
+pub const CODE_ORANGE: &str = "\x1b[33m";
 /// Makes the text green.
-const CODE_GREEN: &str = "\x1b[92m";
+pub const CODE_GREEN: &str = "\x1b[92m";
 
 /// Prompts text from the user on the terminal.
 ///
@@ -100,7 +100,10 @@ impl InstallPrompt for TermPrompt {
 			}
 
 			InstallStep::Localization => {
-				let available_langs = Language::list().unwrap(); // TODO Handle error
+				let available_langs = match Language::list() {
+					Ok(l) => l,
+					Err(e) => panic!("Could not read languages list. This is a bug. Error: {e}"),
+				};
 
 				while self.infos.lang.is_none() {
 					println!("Type `?` to get the list of available languages.");
@@ -160,8 +163,11 @@ impl InstallPrompt for TermPrompt {
 			}
 
 			InstallStep::Partitions => {
-				let disks = Disk::list().unwrap(); // TODO Handle error
-								   // TODO Filter out disks that don't have enough space
+				let disks = Disk::list().unwrap_or_else(|e| {
+					eprintln!("{CODE_RED}Failed to retrieve disks list: {e}{CODE_RESET}");
+					exit(1);
+				});
+				// TODO Filter out disks that don't have enough space
 				if disks.is_empty() {
 					eprintln!(
 						"{CODE_RED}No disk is available for installation. Exiting...{CODE_RESET}"
@@ -172,8 +178,12 @@ impl InstallPrompt for TermPrompt {
 				self.infos.selected_disk = loop {
 					println!("Available disks and partitions:");
 					for dev_path in disks.iter() {
-						// TODO handle error
-						let disk = Disk::read(dev_path.to_path_buf()).unwrap().unwrap();
+						let Some(disk) = Disk::read(dev_path.clone()).unwrap_or_else(|e| {
+							eprintln!("{CODE_RED}Cannot read disk: {e}{CODE_RESET}");
+							exit(1);
+						}) else {
+							continue;
+						};
 
 						println!(
 							"- {} (sectors: {}, size: {})",

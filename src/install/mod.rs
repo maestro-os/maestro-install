@@ -55,12 +55,12 @@ pub struct PartitionDesc {
 
 impl fmt::Display for PartitionDesc {
 	fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
-		if let Some(mount_path) = &self.mount_path {
-			write!(fmt, "{} ", mount_path.display())?;
-		}
-		write!(fmt, "- start: {}; size: {} sectors", self.start, self.size)?;
+		write!(fmt, "start: {}, size: {} sectors", self.start, self.size)?;
 		if self.bootable {
 			write!(fmt, ", bootable")?;
+		}
+		if let Some(mount_path) = &self.mount_path {
+			write!(fmt, ", mount path: {} ", mount_path.display())?;
 		}
 		Ok(())
 	}

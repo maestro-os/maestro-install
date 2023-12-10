@@ -131,7 +131,7 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 [[package]]
 name = "common"
 version = "0.1.0"
-source = "git+https://github.com/llenotre/blimp#9d6bf63dfba16478d0f518edbc3b6f287e290add"
+source = "git+https://github.com/llenotre/blimp#74947464782e7c01f4dbdb43aa82e53ff001c697"
 dependencies = [
  "anyhow",
  "bytes",
@@ -188,7 +188,7 @@ dependencies = [
 [[package]]
 name = "fdisk"
 version = "0.1.0"
-source = "git+https://github.com/llenotre/maestro-utils#35fe552d5bf348f197bd705f2457215bb9f89d87"
+source = "git+https://github.com/llenotre/maestro-utils#51d3ec7e91aa135424ad1c0313f98a21bcfbdeaf"
 dependencies = [
  "libc",
  "utils",
@@ -554,9 +554,9 @@ dependencies = [
 
 [[package]]
 name = "tokio"
-version = "1.34.0"
+version = "1.35.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d0c014766411e834f7af5b8f4cf46257aab4036ca95e9d2c144a10f59ad6f5b9"
+checksum = "841d45b238a16291a4e1584e61820b8ae57d696cc5015c459c229ccc6990cc1c"
 dependencies = [
  "backtrace",
  "num_cpus",
@@ -578,7 +578,7 @@ checksum = "3354b9ac3fae1ff6755cb6db53683adb661634f67557942dea4facebec0fee4b"
 [[package]]
 name = "utils"
 version = "0.1.0"
-source = "git+https://github.com/llenotre/maestro-utils#35fe552d5bf348f197bd705f2457215bb9f89d87"
+source = "git+https://github.com/llenotre/maestro-utils#51d3ec7e91aa135424ad1c0313f98a21bcfbdeaf"
 dependencies = [
  "argon2",
  "libc",
