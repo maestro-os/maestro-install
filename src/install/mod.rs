@@ -101,15 +101,20 @@ impl InstallInfo {
 		let partitions = self
 			.partitions
 			.iter()
-			.map(|desc| Partition {
-				start: desc.start,
-				size: desc.size,
+			.map(|desc| {
+				// TODO handle error
+				let part_type = PartitionType::from_str(desc.part_type.as_str()).unwrap();
+				let uuid = GUID::random();
+				Partition {
+					start: desc.start,
+					size: desc.size,
 
-				part_type: PartitionType::from_str(desc.part_type.as_str()).unwrap(), /* TODO handle error */
+					part_type,
 
-				uuid: Some(GUID::random()),
+					uuid: Some(uuid),
 
-				bootable: desc.bootable,
+					bootable: desc.bootable,
+				}
 			})
 			.collect();
 		let partition_table = PartitionTable {
