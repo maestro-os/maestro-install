@@ -74,10 +74,10 @@ Since the build system is not yet working entirely, dependencies that are requir
 
 > Now, if you are cross compiling, [setup the package manager for cross compilation](https://github.com/llenotre/blimp#cross-compilation).
 
-Compile packages required by the installer:
+Compile packages required by the installer (excluding the kernel):
 
 ```sh
-for pkg in $(cat base_packages.txt); do
+for pkg in $(grep '^maestro\(-ps2\)\?$' -v base_packages.txt); do
     blimp-builder blimp-packages/$pkg local_repo/
 done
 ```
