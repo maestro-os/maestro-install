@@ -1,12 +1,12 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/llenotre/maestro-lnf/master/logo-light.svg">
-    <img src="https://raw.githubusercontent.com/llenotre/maestro-lnf/master/logo.svg" alt="logo" width="50%" />
+    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/maestro-os/maestro-lnf/master/logo-light.svg">
+    <img src="https://raw.githubusercontent.com/maestro-os/maestro-lnf/master/logo.svg" alt="logo" width="50%" />
   </picture>
 </p>
 
 [![MIT license](https://img.shields.io/badge/license-MIT-blue.svg?style=for-the-badge&logo=book)](./LICENSE)
-![Version](https://img.shields.io/badge/dynamic/toml?url=https%3A%2F%2Fraw.githubusercontent.com%2Fllenotre%2Fmaestro-install%2Fmaster%2FCargo.toml&query=%24.package.version&style=for-the-badge&label=version)
+![Version](https://img.shields.io/badge/dynamic/toml?url=https%3A%2F%2Fraw.githubusercontent.com%2Fmaestro-os%2Fmaestro-install%2Fmaster%2FCargo.toml&query=%24.package.version&style=for-the-badge&label=version)
 
 
 
@@ -26,7 +26,11 @@ The installer for the Maestro operating system is shipped under the ISO format, 
 > export TARGET="i686-unknown-linux-musl"
 > ```
 > 
-> Then, you need to [build a toolchain](https://github.com/llenotre/gcc_maestro).
+> This following targets are available:
+> - `x86_64-unknown-linux-musl`
+> - `i686-unknown-linux-musl`
+> 
+> Then, you need to [build a toolchain](https://github.com/maestro-os/blimp/tree/master/cross).
 
 
 
@@ -35,12 +39,12 @@ The installer for the Maestro operating system is shipped under the ISO format, 
 
 The installer requires a minimum set of packages. The list of those packages is in the `base_packages.txt` file.
 
-To build those packages, you first need to install [Maestro's package manager](https://github.com/llenotre/blimp) on your local computer.
+To build those packages, you first need to install [Maestro's package manager](https://github.com/maestro-os/blimp) on your local computer.
 
-Package descriptors can be found [here](https://github.com/llenotre/blimp-packages). Clone the repository:
+Package descriptors can be found [here](https://github.com/maestro-os/blimp-packages). Clone the repository:
 
 ```sh
-git clone https://github.com/llenotre/blimp-packages
+git clone https://github.com/maestro-os/blimp-packages
 ```
 
 Create a local repository for built packages:
@@ -72,13 +76,13 @@ Since the build system is not yet working entirely, dependencies that are requir
 
 ### Build required packages
 
-> Now, if you are cross compiling, [setup the package manager for cross compilation](https://github.com/llenotre/blimp#cross-compilation).
+> Now, if you are cross compiling, [setup the package manager for cross compilation](https://github.com/maestro-os/blimp#cross-compilation).
 
 Compile packages required by the installer (excluding the kernel):
 
 ```sh
-for pkg in $(grep '^maestro\(-ps2\)\?$' -v base_packages.txt); do
-    blimp-builder blimp-packages/$pkg local_repo/
+for pkg in $(cat base_packages.txt); do
+    blimp-builder blimp-packages/$pkg $LOCAL_REPO
 done
 ```
 
