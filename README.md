@@ -1,3 +1,5 @@
+> **Note**: this software is **NOT** currently tested against the latest Maestro kernel. See the last section of [this blog article](https://blog.lenot.re/a/page-cache).
+
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/maestro-os/maestro-lnf/master/logo-light.svg">
