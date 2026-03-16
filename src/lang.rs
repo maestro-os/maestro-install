@@ -18,15 +18,8 @@
 
 //! TODO doc
 
-use serde::Deserialize;
-use serde::Serialize;
-use std::collections::HashMap;
-use std::fmt;
-use std::fs;
-use std::fs::File;
-use std::io;
-use std::io::BufReader;
-use std::path::Path;
+use serde::{Deserialize, Serialize};
+use std::{collections::HashMap, fmt, fs, fs::File, io, io::BufReader, path::Path};
 
 /// The path to the languages directory.
 const LANGS_PATH: &str = "lang/"; // TODO Use an absolute path

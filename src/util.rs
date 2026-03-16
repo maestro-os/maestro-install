@@ -18,10 +18,11 @@
 
 //! This module implements utility functions.
 
-use std::io;
-use std::io::BufRead;
-use std::process::exit;
-use std::process::Command;
+use std::{
+	io,
+	io::BufRead,
+	process::{exit, Command},
+};
 
 /// Reads a line from the standard input and returns it.
 ///

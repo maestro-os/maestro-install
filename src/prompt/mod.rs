@@ -20,8 +20,7 @@
 
 pub mod term;
 
-use crate::install::InstallInfo;
-use crate::install::InstallProgress;
+use crate::install::{InstallInfo, InstallProgress};
 
 /// Enumeration of installation steps.
 #[derive(Clone, Copy)]

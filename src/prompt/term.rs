@@ -18,16 +18,17 @@
 
 //! This module implements installation prompt from terminal.
 
-use super::InstallPrompt;
-use super::InstallStep;
-use crate::install::InstallInfo;
-use crate::install::InstallProgress;
-use crate::install::PartitionDesc;
-use crate::lang::Language;
-use crate::util;
-use fdisk::disk::Disk;
+use super::{InstallPrompt, InstallStep};
+use crate::{
+	install::{InstallInfo, InstallProgress, PartitionDesc},
+	lang::Language,
+	util,
+};
+use common::{
+	maestro_utils,
+	maestro_utils::{disk::Disk, util::ByteSize},
+};
 use std::process::exit;
-use utils::util::ByteSize;
 
 /// Resets text style.
 pub const CODE_RESET: &str = "\x1b[0m";
@@ -54,9 +55,8 @@ fn prompt<V: Fn(&str) -> Result<(), Option<String>>>(
 	validator: V,
 ) -> String {
 	loop {
-		let Some(input) = utils::prompt::prompt(Some(prompt_text), hidden) else {
-			// TODO
-			todo!();
+		let Some(input) = maestro_utils::prompt::prompt(prompt_text, hidden) else {
+			todo!()
 		};
 
 		match validator(&input) {
@@ -156,7 +156,8 @@ impl InstallPrompt for TermPrompt {
 			}
 
 			InstallStep::CreateAdmin => {
-				self.infos.admin_user = prompt("Type admin username: ", false, non_empty_validator);
+				self.infos.admin_user =
+					prompt("Type admin username: ", false, non_empty_validator);
 
 				loop {
 					println!();
@@ -168,7 +169,7 @@ impl InstallPrompt for TermPrompt {
 						eprintln!("{CODE_ORANGE}Passwords don't match!{CODE_RESET}");
 						continue;
 					}
-					let pass = match utils::user::hash_password(&pass) {
+					let pass = match maestro_utils::user::hash_password(&pass) {
 						Ok(p) => p,
 						Err(e) => {
 							eprintln!("{CODE_ORANGE}Invalid password: {e}{CODE_RESET}");
@@ -206,8 +207,8 @@ impl InstallPrompt for TermPrompt {
 						println!(
 							"- {} (sectors: {}, size: {})",
 							dev_path.display(),
-							disk.get_size(),
-							ByteSize::from_sectors_count(disk.get_size()),
+							disk.size(),
+							ByteSize(disk.size()),
 						);
 
 						for p in &disk.partition_table.partitions {
@@ -302,7 +303,7 @@ impl InstallPrompt for TermPrompt {
 						let root_start = boot_part.start + boot_part.size;
 						let root_part = PartitionDesc {
 							start: root_start,
-							size: disk.get_size() - root_start,
+							size: disk.size() - root_start,
 
 							// Linux root (x86)
 							part_type: "44479540-F297-41B2-9AF7-D131D5F0458A".to_owned(),
@@ -374,8 +375,7 @@ impl InstallPrompt for TermPrompt {
 		self.infos.clone()
 	}
 
-	fn update_progress(&mut self, progress: &InstallProgress) {
-		// TODO
-		todo!();
+	fn update_progress(&mut self, _progress: &InstallProgress) {
+		todo!()
 	}
 }

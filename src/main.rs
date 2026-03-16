@@ -23,12 +23,11 @@ mod lang;
 mod prompt;
 mod util;
 
-use prompt::term::TermPrompt;
-use prompt::term::{CODE_RED, CODE_RESET};
-use prompt::InstallPrompt;
-use prompt::InstallStep;
-use std::env;
-use std::process::exit;
+use prompt::{
+	term::{TermPrompt, CODE_RED, CODE_RESET},
+	InstallPrompt, InstallStep,
+};
+use std::{env, process::exit};
 
 fn main() {
 	// Get prompt type

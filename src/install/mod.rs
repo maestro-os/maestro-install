@@ -18,37 +18,31 @@
 
 //! This module handles the installation procedure.
 
-use crate::lang::Language;
-use crate::prompt::InstallPrompt;
-use common::repository::Repository;
-use common::Environment;
-use fdisk::disk;
-use fdisk::disk::Disk;
-use fdisk::guid::GUID;
-use fdisk::partition::PartitionTable;
-use fdisk::partition::PartitionTableType;
-use fdisk::partition::{Partition, PartitionType};
-use serde::Deserialize;
-use serde::Serialize;
-use std::error::Error;
-use std::fmt;
-use std::fs;
-use std::fs::OpenOptions;
-use std::fs::Permissions;
-use std::io::ErrorKind;
-use std::io::Write;
-use std::os::unix::fs::chown;
-use std::os::unix::prelude::PermissionsExt;
-use std::path::Path;
-use std::path::PathBuf;
-use std::process::Command;
-use std::str::FromStr;
-use utils::user;
-use utils::user::Group;
-use utils::user::Shadow;
-use utils::user::User;
-use utils::util::get_timestamp;
-
+use crate::{lang::Language, prompt::InstallPrompt};
+use common::{
+	maestro_utils::{
+		disk,
+		disk::Disk,
+		partition::{Partition, PartitionTable, PartitionTableType, PartitionType},
+		user,
+		user::{Group, Shadow, User},
+		util::get_timestamp,
+	},
+	repository::Repository,
+	Environment,
+};
+use serde::{Deserialize, Serialize};
+use std::{
+	error::Error,
+	fmt, fs,
+	fs::{OpenOptions, Permissions},
+	io::{ErrorKind, Write},
+	os::unix::{fs::chown, prelude::PermissionsExt},
+	path::{Path, PathBuf},
+	process::Command,
+	str::FromStr,
+};
+use uuid::Uuid;
 // TODO Use InstallProgress instead of printing directly
 
 /// Structure representing a partition to be created.
@@ -122,21 +116,20 @@ impl InstallInfo {
 			.map(|desc| {
 				// TODO handle error
 				let part_type = PartitionType::from_str(desc.part_type.as_str()).unwrap();
-				let uuid = GUID::random();
 				Partition {
 					start: desc.start,
 					size: desc.size,
 
 					part_type,
 
-					uuid: Some(uuid),
+					uuid: Some(Uuid::new_v4()),
 
 					bootable: desc.bootable,
 				}
 			})
 			.collect();
 		let partition_table = PartitionTable {
-			table_type: PartitionTableType::GPT,
+			table_type: PartitionTableType::Gpt,
 			partitions,
 		};
 
@@ -277,15 +270,13 @@ impl InstallInfo {
 	fn install_packages(&self, mnt_path: &Path) -> Result<(), Box<dyn Error>> {
 		fs::create_dir_all(mnt_path.join("usr/lib/blimp"))?;
 
-		let env = Environment::with_root(mnt_path.into()).unwrap();
+		let env = Environment::acquire(mnt_path, vec![], None)?.unwrap();
 		// TODO add option to use remote repo
-		let repo = Repository::load("/local_repo".into())?;
+		let repo = Repository::load("/local_repo".into());
 
 		for pkg in repo.list_packages()? {
-			let name = pkg.get_name();
-			let version = pkg.get_version();
-			println!("Install `{name}` (version {version})...");
-			let archive_path = repo.get_archive_path(name, version);
+			println!("Install `{}` (version {})...", pkg.name, pkg.version);
+			let archive_path = repo.get_archive_path(env.arch(), &pkg.name, &pkg.version);
 			env.install(&pkg, &archive_path)?;
 		}
 		Ok(())
@@ -366,7 +357,7 @@ impl InstallInfo {
 	fn create_users(&self, mnt_path: &Path) -> Result<(), Box<dyn Error>> {
 		// Create admin user's home
 		let admin_uid = 1000;
-		let admin_home = format!("/home/{}", self.admin_user).into();
+		let admin_home = PathBuf::from(format!("/home/{}", self.admin_user));
 		let admin_home_mnt = mnt_path.join(format!("home/{}", self.admin_user));
 		fs::create_dir_all(&admin_home_mnt)?;
 		chown(&admin_home_mnt, Some(admin_uid), Some(admin_uid))?;
@@ -374,75 +365,75 @@ impl InstallInfo {
 		// Write /etc/passwd
 		let users = [
 			User {
-				login_name: "root".into(),
-				password: "x".into(),
+				login_name: "root",
+				password: "x",
 				uid: 0,
 				gid: 0,
-				comment: "".into(),
-				home: "/root".into(),
-				interpreter: "/bin/bash".into(),
+				comment: "",
+				home: Path::new("/root"),
+				interpreter: "/bin/bash",
 			},
 			User {
-				login_name: self.admin_user.clone(),
-				password: "x".into(),
+				login_name: &self.admin_user,
+				password: "x",
 				uid: admin_uid,
 				gid: admin_uid,
-				comment: "".into(),
-				home: admin_home,
-				interpreter: "/bin/bash".into(),
+				comment: "",
+				home: &admin_home,
+				interpreter: "/bin/bash",
 			},
 		];
 		let passwd_path = mnt_path.join("etc/passwd");
-		user::write_passwd(&passwd_path, &users)?;
+		user::write(&passwd_path, &users)?;
 		fs::set_permissions(passwd_path, Permissions::from_mode(0o644))?;
 
 		// Write /etc/shadow
 		let last_change = (get_timestamp().as_secs() / 3600 / 24) as u32;
 		let shadows = [
 			Shadow {
-				login_name: "root".into(),
-				password: self.admin_pass.clone(),
+				login_name: "root",
+				password: &self.admin_pass,
 				last_change,
 				minimum_age: None,
 				maximum_age: None,
 				warning_period: None,
 				inactivity_period: None,
 				account_expiration: None,
-				reserved: "".into(),
+				reserved: "",
 			},
 			Shadow {
-				login_name: self.admin_user.clone(),
-				password: self.admin_pass.clone(),
+				login_name: &self.admin_user,
+				password: &self.admin_pass,
 				last_change,
 				minimum_age: None,
 				maximum_age: None,
 				warning_period: None,
 				inactivity_period: None,
 				account_expiration: None,
-				reserved: "".into(),
+				reserved: "",
 			},
 		];
 		let shadow_path = mnt_path.join("etc/shadow");
-		user::write_shadow(&shadow_path, &shadows)?;
+		user::write(&shadow_path, &shadows)?;
 		fs::set_permissions(shadow_path, Permissions::from_mode(0o600))?;
 
 		// Write /etc/group
 		let groups = [
 			Group {
-				group_name: "root".into(),
-				password: "x".into(),
+				group_name: "root",
+				password: "x",
 				gid: 0,
-				users_list: "root".into(),
+				users_list: "root",
 			},
 			Group {
-				group_name: self.admin_user.clone(),
-				password: "x".into(),
+				group_name: &self.admin_user,
+				password: "x",
 				gid: admin_uid,
-				users_list: self.admin_user.clone(),
+				users_list: &self.admin_user,
 			},
 		];
 		let group_path = mnt_path.join("etc/group");
-		user::write_group(&group_path, &groups)?;
+		user::write(&group_path, &groups)?;
 		fs::set_permissions(group_path, Permissions::from_mode(0o644))?;
 
 		Ok(())
