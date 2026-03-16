@@ -47,7 +47,7 @@ fn main() {
 		prompt.next_step();
 		if matches!(curr_step, InstallStep::Install) {
 			let infos = prompt.get_infos();
-			if let Err(e) = infos.perform_install(&mut prompt) {
+			if let Err(e) = infos.perform_install() {
 				eprintln!("{CODE_RED}Installation failed: {e}{CODE_RESET}");
 				exit(1);
 			}
