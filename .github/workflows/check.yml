@@ -1,0 +1,25 @@
+name: Check
+on:
+  push:
+    branches: [master]
+  pull_request:
+jobs:
+  fmt:
+    name: Format
+    runs-on: [self-hosted, linux]
+    steps:
+      - uses: actions/checkout@v6
+      - run: cargo fmt --check
+  clippy:
+    name: Clippy
+    runs-on: [self-hosted, linux]
+    steps:
+      - uses: actions/checkout@v6
+      - run: cargo clippy -- -D warnings
+  test:
+    name: Test
+    runs-on: [self-hosted, linux]
+    needs: clippy
+    steps:
+      - uses: actions/checkout@v6
+      - run: cargo test
