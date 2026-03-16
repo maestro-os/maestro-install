@@ -3,9 +3,7 @@
 set -e
 
 # If not specified, set build target to default
-if [ -z $TARGET ]; then
-  TARGET=i686-unknown-linux-musl
-fi
+TARGET=${TARGET:-x86_64-unknown-linux-musl}
 
 GRUB_ROOT=iso_build/iso
 INITRAMFS_ROOT=iso_build/mnt
