@@ -18,7 +18,7 @@
 
 //! This module handles the installation procedure.
 
-use crate::{lang::Language, prompt::InstallPrompt};
+use crate::lang::Language;
 use common::{
 	maestro_utils::{
 		disk,
@@ -78,7 +78,7 @@ impl fmt::Display for PartitionDesc {
 	}
 }
 
-/// Structure storing installation informations.
+/// Structure storing installation information.
 #[derive(Clone, Default, Deserialize, Serialize)]
 pub struct InstallInfo {
 	/// The system's language.
@@ -156,7 +156,7 @@ impl InstallInfo {
 			// TODO use ext4
 			let status = Command::new("mkfs.ext2").arg(dev_path).status()?;
 			if !status.success() {
-				return Err(format!("Filesystem creation failed!").into());
+				return Err("Filesystem creation failed!".into());
 			}
 		}
 		Ok(())
@@ -454,17 +454,12 @@ impl InstallInfo {
 	/// Performs the installation operation.
 	///
 	/// `prompt` is the prompt associated with the installation procedure.
-	pub fn perform_install(&self, prompt: &mut dyn InstallPrompt) -> Result<(), Box<dyn Error>> {
-		let mut progress = InstallProgress {
-			prompt,
-
-			logs: vec![],
-			progress: 0,
-		};
+	pub fn perform_install(&self) -> Result<(), Box<dyn Error>> {
+		let mut progress = InstallProgress::default();
 
 		let mnt_path = Path::new("/mnt");
 		progress.log(&format!("Create directory `{}`\n", mnt_path.display()));
-		fs::create_dir(&mnt_path)?;
+		fs::create_dir(mnt_path)?;
 
 		progress.log("\nPartition disk\n");
 		self.partition_disks()?;
@@ -476,25 +471,25 @@ impl InstallInfo {
 		self.mount_filesystems()?;
 
 		progress.log("\nCreate directory structure\n");
-		self.create_dirs(&mnt_path)?;
+		self.create_dirs(mnt_path)?;
 
 		progress.log("\nInstall packages\n");
-		self.install_packages(&mnt_path)?;
+		self.install_packages(mnt_path)?;
 
 		progress.log("\nInstall bootloader\n");
-		self.install_bootloader(&mnt_path)?;
+		self.install_bootloader(mnt_path)?;
 
 		progress.log("\nSet locales\n");
-		self.set_locales(&mnt_path)?;
+		self.set_locales(mnt_path)?;
 
 		progress.log("\nSet hostname\n");
-		self.set_hostname(&mnt_path)?;
+		self.set_hostname(mnt_path)?;
 
 		progress.log("\nCreate users and groups\n");
-		self.create_users(&mnt_path)?;
+		self.create_users(mnt_path)?;
 
 		progress.log("\nUnmount filesystems\n");
-		self.unmount_filesystems(&mnt_path)?;
+		self.unmount_filesystems(mnt_path)?;
 
 		progress.log("\nDone!\n");
 
@@ -502,42 +497,19 @@ impl InstallInfo {
 	}
 }
 
-/// Structure representing the current progress of the installation.
-pub struct InstallProgress<'p> {
-	/// The installation prompt.
-	prompt: &'p mut dyn InstallPrompt,
-
+/// The current progress of the installation.
+#[derive(Default)]
+pub struct InstallProgress {
 	/// Logs.
 	logs: Vec<String>,
-	/// Progress in percent, between 0 and 1000.
-	progress: u16,
 }
 
-impl<'p> InstallProgress<'p> {
+impl InstallProgress {
 	/// Inserts the given logs.
 	pub fn log(&mut self, s: &str) {
 		print!("{s}");
-
-		self.logs
-			.append(&mut s.split('\n').map(str::to_owned).collect());
-		// FIXME self.prompt.update_progress(self);
+		self.logs.extend(&mut s.split('\n').map(str::to_owned));
 	}
 
-	/// Returns an immutable reference to the installation logs.
-	pub fn get_logs(&self) -> &[String] {
-		self.logs.as_slice()
-	}
-
-	/// Returns the current percentage of advancement of the installation, represented by a value
-	/// between 0 and 1000.
-	pub fn get_progress(&self) -> u16 {
-		self.progress
-	}
-
-	/// Sets the current percentage of advancement of the installation, represented by a value
-	/// between 0 and 1000.
-	pub fn set_progress(&mut self, progress: u16) {
-		self.progress = progress;
-		// FIXME self.prompt.update_progress(self);
-	}
+	// TODO get_logs
 }

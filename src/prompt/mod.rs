@@ -20,7 +20,7 @@
 
 pub mod term;
 
-use crate::install::{InstallInfo, InstallProgress};
+use crate::install::InstallInfo;
 
 /// Enumeration of installation steps.
 #[derive(Clone, Copy)]
@@ -76,7 +76,7 @@ impl InstallStep {
 	}
 }
 
-/// Trait to be implemented for each ways of ask the user for informations about the installation.
+/// An interface between the installer and the user.
 pub trait InstallPrompt {
 	/// Returns the current step.
 	/// If the function returns None, the installation is finished.
@@ -84,9 +84,6 @@ pub trait InstallPrompt {
 	/// Prompts the next step.
 	fn next_step(&mut self);
 
-	/// Returns prompted informations.
+	/// Returns prompted information.
 	fn get_infos(&self) -> InstallInfo;
-
-	/// Updates the current progress of the installation.
-	fn update_progress(&mut self, progress: &InstallProgress);
 }

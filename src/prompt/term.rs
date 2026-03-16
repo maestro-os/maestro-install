@@ -20,7 +20,7 @@
 
 use super::{InstallPrompt, InstallStep};
 use crate::{
-	install::{InstallInfo, InstallProgress, PartitionDesc},
+	install::{InstallInfo, PartitionDesc},
 	lang::Language,
 	util,
 };
@@ -45,10 +45,9 @@ pub const CODE_GREEN: &str = "\x1b[92m";
 /// - `prompt_text` is the text showed to the user while prompting.
 /// - `hidden` tells whether the input must be hidden.
 /// - `validator` is a function called to check whether the given input is valid. If not, the
-/// function can return an error message which is printed, then the function prompts for input
-/// again.
-/// If no error message is provided, no message is printed and the function prompts for input again
-/// directly.
+///   function can return an error message which is printed, then the function prompts for input
+///   again. If no error message is provided, no message is printed and the function prompts for
+///   input again directly.
 fn prompt<V: Fn(&str) -> Result<(), Option<String>>>(
 	prompt_text: &str,
 	hidden: bool,
@@ -373,9 +372,5 @@ impl InstallPrompt for TermPrompt {
 
 	fn get_infos(&self) -> InstallInfo {
 		self.infos.clone()
-	}
-
-	fn update_progress(&mut self, _progress: &InstallProgress) {
-		todo!()
 	}
 }
