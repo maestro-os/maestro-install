@@ -5,12 +5,12 @@ set -e
 # If not specified, set build target to default
 TARGET=${TARGET:-x86_64-unknown-linux-musl}
 
-GRUB_ROOT=iso_build/iso
-INITRAMFS_ROOT=iso_build/mnt
+GRUB_ROOT=installer-build/iso
+INITRAMFS_ROOT=installer-build/mnt
 
 # Setup grub config
 mkdir -pv $GRUB_ROOT/boot/grub
-cp -v grub.cfg $GRUB_ROOT/boot/grub/
+cp -v grub-installer.cfg $GRUB_ROOT/boot/grub/
 
 # Create directories hierarchy
 mkdir -pv $INITRAMFS_ROOT/{dev,etc,lang,proc,sbin,tmp,usr/lib/blimp}
@@ -40,4 +40,4 @@ echo '/sbin/install' >$INITRAMFS_ROOT/etc/solfege/startup
 
 # Create ISO file
 cd $INITRAMFS_ROOT; find . | cpio -o >../../$GRUB_ROOT/boot/initramfs; cd ../..
-grub-mkrescue -o maestro.iso iso_build/iso/
+grub-mkrescue -o maestro.iso $GRUB_ROOT
