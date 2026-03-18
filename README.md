@@ -38,7 +38,6 @@ The installer for the Maestro operating system is shipped under the ISO format, 
 
 ## Build packages
 
-
 The installer requires a minimum set of packages. The list of those packages is in the `base_packages.txt` file.
 
 To build those packages, you first need to install [Maestro's package manager](https://github.com/maestro-os/blimp) on your local computer.
