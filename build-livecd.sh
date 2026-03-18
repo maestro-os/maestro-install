@@ -4,6 +4,8 @@ set -e
 
 # If not specified, set build target to default
 TARGET=${TARGET:-x86_64-unknown-linux-musl}
+ARCH=${TARGET%%-*}
+[[ $ARCH == i[3456]86 ]] && ARCH=x86
 
 GRUB_ROOT=livecd-build/iso
 INITRAMFS_ROOT=livecd-build/mnt
@@ -25,8 +27,13 @@ mkdir -pv $INITRAMFS_ROOT/usr/local/share/{doc,info,locale,man,misc}
 mkdir -pv $INITRAMFS_ROOT/var/{cache,lib,local,log,mail,opt,spool}
 mkdir -pv $INITRAMFS_ROOT/var/lib/misc
 
+# Blimp setup
+mkdir -pv $INITRAMFS_ROOT/var/lib/blimp
+echo "pkg.maestro-os.org" >$INITRAMFS_ROOT/var/lib/blimp/remotes-list
+
 # Install packages
-yes | SYSROOT="$INITRAMFS_ROOT" blimp install bash coreutils maestro maestro-ps2 maestro-utils solfege
+SYSROOT="$INITRAMFS_ROOT" blimp update
+yes | SYSROOT="$INITRAMFS_ROOT" blimp --arch $ARCH install bash coreutils maestro maestro-ps2 maestro-utils solfege
 
 # Move kernel to GRUB
 mv -v $INITRAMFS_ROOT/boot/maestro $GRUB_ROOT/boot/

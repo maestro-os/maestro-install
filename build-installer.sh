@@ -4,6 +4,8 @@ set -e
 
 # If not specified, set build target to default
 TARGET=${TARGET:-x86_64-unknown-linux-musl}
+ARCH=${TARGET%%-*}
+[[ $ARCH == i[3456]86 ]] && ARCH=x86
 
 GRUB_ROOT=installer-build/iso
 INITRAMFS_ROOT=installer-build/mnt
@@ -13,7 +15,7 @@ mkdir -pv $GRUB_ROOT/boot/grub
 cp -v grub-installer.cfg $GRUB_ROOT/boot/grub/
 
 # Create directories hierarchy
-mkdir -pv $INITRAMFS_ROOT/{dev,etc,lang,proc,sbin,tmp,usr/lib/blimp}
+mkdir -pv $INITRAMFS_ROOT/{dev,etc,lang,proc,sbin,tmp,usr}
 
 # Compile and install installer
 cargo build --release --target $TARGET -Zbuild-std
@@ -28,8 +30,12 @@ if [ ! -z "$LOCAL_REPO" ]; then
 	done
 fi
 
+# Blimp setup
+mkdir -pv $INITRAMFS_ROOT/var/lib/blimp
+echo "pkg.maestro-os.org" >$INITRAMFS_ROOT/var/lib/blimp/remotes-list
+
 # Install packages required by the installer
-yes | SYSROOT="$INITRAMFS_ROOT" blimp install grub maestro maestro-ps2 maestro-utils solfege
+yes | SYSROOT="$INITRAMFS_ROOT" blimp --arch $ARCH install grub maestro maestro-ps2 maestro-utils solfege
 
 # Move kernel to GRUB
 mv -v $INITRAMFS_ROOT/boot/maestro $GRUB_ROOT/boot/
