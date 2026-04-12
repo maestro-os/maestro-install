@@ -21,11 +21,10 @@
 use crate::lang::Language;
 use common::{
 	maestro_utils::{
-		disk,
-		disk::Disk,
+		disk::{self, Disk},
+		fhs,
 		partition::{Partition, PartitionTable, PartitionTableType, PartitionType},
-		user,
-		user::{Group, Shadow, User},
+		user::{self, Group, Shadow, User},
 		util::get_timestamp,
 	},
 	repository::Repository,
@@ -36,7 +35,7 @@ use std::{
 	error::Error,
 	fmt, fs,
 	fs::{OpenOptions, Permissions},
-	io::{ErrorKind, Write},
+	io::Write,
 	os::unix::{fs::chown, prelude::PermissionsExt},
 	path::{Path, PathBuf},
 	process::Command,
@@ -192,78 +191,6 @@ impl InstallInfo {
 		Ok(())
 	}
 
-	/// Creates the folder hierarchy on the disk.
-	///
-	/// `mnt_path` is the path to the root filesystem's mountpoint.
-	fn create_dirs(&self, mnt_path: &Path) -> Result<(), Box<dyn Error>> {
-		let paths = &[
-			"bin",
-			"boot",
-			"dev",
-			"etc",
-			"home",
-			"lib",
-			"media",
-			"mnt",
-			"opt",
-			"proc",
-			"root",
-			"run",
-			"sbin",
-			"srv",
-			"sys",
-			"tmp",
-			"usr",
-			"var",
-			"etc/opt",
-			"etc/sysconfig",
-			"lib/firmware",
-			"run/lock",
-			"run/log",
-			"usr/bin",
-			"usr/include",
-			"usr/lib",
-			"usr/local",
-			"usr/sbin",
-			"usr/share",
-			"usr/src",
-			"usr/share/doc",
-			"usr/share/info",
-			"usr/share/locale",
-			"usr/share/man",
-			"usr/share/misc",
-			"usr/local/bin",
-			"usr/local/include",
-			"usr/local/lib",
-			"usr/local/sbin",
-			"usr/local/share",
-			"usr/local/src",
-			"usr/local/share/doc",
-			"usr/local/share/info",
-			"usr/local/share/locale",
-			"usr/local/share/man",
-			"usr/local/share/misc",
-			"var/cache",
-			"var/lib",
-			"var/local",
-			"var/log",
-			"var/mail",
-			"var/opt",
-			"var/spool",
-			"var/lib/misc",
-		];
-		for path in paths {
-			println!("Create directory `{path}`");
-			let path = mnt_path.join(path);
-			match fs::create_dir(path) {
-				Ok(_) => {}
-				Err(e) if e.kind() == ErrorKind::AlreadyExists => {}
-				Err(e) => return Err(e.into()),
-			}
-		}
-		Ok(())
-	}
-
 	/// Installs packages on the system.
 	///
 	/// `mnt_path` is the path to the root filesystem's mountpoint.
@@ -272,7 +199,7 @@ impl InstallInfo {
 
 		let env = Environment::acquire(mnt_path, vec![], None)?.unwrap();
 		// TODO add option to use remote repo
-		let repo = Repository::load("/local_repo".into());
+		let repo = Repository::local("/local_repo".into());
 
 		for pkg in repo.list_packages()? {
 			println!("Install `{}` (version {})...", pkg.name, pkg.version);
@@ -471,7 +398,7 @@ impl InstallInfo {
 		self.mount_filesystems()?;
 
 		progress.log("\nCreate directory structure\n");
-		self.create_dirs(mnt_path)?;
+		fhs::create_dirs(mnt_path, true)?;
 
 		progress.log("\nInstall packages\n");
 		self.install_packages(mnt_path)?;
