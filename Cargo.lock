@@ -124,7 +124,7 @@ dependencies = [
 [[package]]
 name = "common"
 version = "0.1.0"
-source = "git+https://github.com/maestro-os/blimp?branch=server-refactor#67bd0adadf5ba340811f4709386607f16d56c603"
+source = "git+https://github.com/maestro-os/blimp#28ef3d0582749013aceb863bf30397ef54d13611"
 dependencies = [
  "anyhow",
  "bytes",
@@ -500,7 +500,7 @@ dependencies = [
 [[package]]
 name = "mutils"
 version = "0.1.0"
-source = "git+https://github.com/maestro-os/maestro-utils#be442de7fdb7026c1a69072d08ccba49cd1de583"
+source = "git+https://github.com/maestro-os/maestro-utils#286e1b211db5aad719a2f996732956c7fa4fa5fd"
 dependencies = [
  "argon2",
  "libc",

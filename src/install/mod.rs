@@ -272,7 +272,7 @@ impl InstallInfo {
 
 		let env = Environment::acquire(mnt_path, vec![], None)?.unwrap();
 		// TODO add option to use remote repo
-		let repo = Repository::load("/local_repo".into());
+		let repo = Repository::local("/local_repo".into());
 
 		for pkg in repo.list_packages()? {
 			println!("Install `{}` (version {})...", pkg.name, pkg.version);
