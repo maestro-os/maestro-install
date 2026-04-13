@@ -1,5 +1,6 @@
 #!/bin/bash
 
-rm -rfv iso_build/
+rm -rfv installer-build/
+rm -rfv livecd-build/
 rm -rfv maestro.iso
 cargo clean
