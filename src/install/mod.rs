@@ -20,14 +20,15 @@
 
 use crate::lang::Language;
 use common::{
+	fhs,
 	maestro_utils::{
 		disk::{self, Disk},
-		fhs,
 		partition::{Partition, PartitionTable, PartitionTableType, PartitionType},
 		user::{self, Group, Shadow, User},
 		util::get_timestamp,
 	},
 	repository::Repository,
+	util::current_arch,
 	Environment,
 };
 use serde::{Deserialize, Serialize};
@@ -197,7 +198,7 @@ impl InstallInfo {
 	fn install_packages(&self, mnt_path: &Path) -> Result<(), Box<dyn Error>> {
 		fs::create_dir_all(mnt_path.join("usr/lib/blimp"))?;
 
-		let env = Environment::acquire(mnt_path, vec![], None)?.unwrap();
+		let mut env = Environment::acquire(mnt_path, current_arch())?.unwrap();
 		// TODO add option to use remote repo
 		let repo = Repository::local("/local_repo".into());
 
